@@ -218,7 +218,7 @@ footer{position:relative;z-index:1;text-align:center;padding:18px 28px;
 
 <footer>
   Upbit · Bithumb · Coinone (via proxy) · Kraken · Binance.US · Coinbase · Bitstamp · OKX · Gemini
-  · KRW/USD: exchangerate-api.com · RLUSD on Coinone from 2026-03-24
+  · KRW/USD: exchangerate-api.com · RLUSD: Coinone/Bithumb (KRW) + Kraken/Bitstamp/OKX/Gemini (USD)
 </footer>
 
 <script>
@@ -255,8 +255,9 @@ const COINS = {
     kraken:'XETHZUSD', binanceus:'ETHUSDT',  coinbase:'ETH-USD',
     bitstamp:'ethusd', okx:'ETH-USDT',       gemini:'ethusd'},
   RLUSD:{dec:2, color:'#10b981',
-    // RLUSD: KRW only, Coinone-exclusive Korean listing
-    bithumb:'RLUSD', coinone:'RLUSD'},
+    bithumb:'RLUSD', coinone:'RLUSD',
+    kraken:'RLUSDUSD', bitstamp:'rlusdusd',
+    okx:'RLUSD-USDT',  gemini:'rlusdusd'},
 };
 
 let G={data:{},krwUsd:0.000713,period:'daily',selEx:new Set(Object.keys(EXCHANGES)),selCoin:new Set(Object.keys(COINS))};
