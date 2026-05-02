@@ -3,15 +3,9 @@ import requests
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, 'static')
 
-app = Flask(__name__, static_folder=STATIC_DIR)
+app = Flask(__name__)
 
-# ── Coinone proxy ──────────────────────────────────────────────
-# Coinone blocks browser fetches (no CORS headers).
-# This route calls Coinone server-side (no CORS restriction) and
-# re-serves the JSON with Access-Control-Allow-Origin: * so the
-# dashboard JS can read it.
 COINONE_BASE = 'https://api.coinone.co.kr/public/v2'
 ALLOWED_SYMBOLS = {'XRP', 'BTC', 'ETH', 'RLUSD', 'SOL', 'ADA', 'DOT'}
 
@@ -40,14 +34,9 @@ def proxy_coinone(symbol):
         abort(500, str(e))
 
 
-# ── Serve the dashboard ────────────────────────────────────────
 @app.route('/')
 def index():
-    return send_from_directory(STATIC_DIR, 'index.html')
-
-@app.route('/<path:filename>')
-def static_files(filename):
-    return send_from_directory(STATIC_DIR, filename)
+    return send_from_directory(BASE_DIR, 'index.html')
 
 
 if __name__ == '__main__':
