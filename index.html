@@ -50,36 +50,38 @@ header{position:relative;z-index:2;padding:22px 28px;border-bottom:1px solid var
 .dot.err{background:#ef4444;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
 main{position:relative;z-index:1;padding:24px 28px;max-width:1700px;margin:0 auto;}
-#pills{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+/* ── Unified control bar ── */
+.ctrl-bar{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:16px 20px;margin-bottom:20px;display:flex;flex-direction:column;gap:0;}
+.pills-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:14px;}
 .pill{background:var(--surface);border:1px solid var(--border);border-radius:8px;
-  padding:10px 16px;display:flex;align-items:center;gap:10px;transition:border-color .2s;}
+  padding:8px 14px;display:flex;align-items:center;gap:9px;transition:border-color .2s;}
 .pill:hover{border-color:var(--accent);}
 .pill .dot2{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.pill .pl{font-size:10px;color:var(--muted);font-family:var(--mono);}
-.pill .pv{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--text);}
+.pill .pl{font-size:9px;color:var(--muted);font-family:var(--mono);}
+.pill .pv{font-size:14px;font-weight:700;font-family:var(--mono);color:var(--text);}
+.bar-div{height:1px;background:var(--border);margin:0 -20px;width:calc(100% + 40px);}
+.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:12px;}
+.filter-row+.filter-row{padding-top:10px;}
+.filter-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);width:82px;flex-shrink:0;font-family:var(--mono);}
+.chip-group{display:flex;gap:7px;flex-wrap:wrap;flex:1;}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:8px;
+  cursor:pointer;border:1px solid var(--border);background:var(--surface);
+  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--dim);
+  transition:all .15s;user-select:none;white-space:nowrap;}
+.chip:hover{border-color:var(--accent);color:var(--text);}
+.chip.on{color:#000 !important;border-color:transparent !important;}
+.chip .cdot2{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.chip .cst{font-size:10px;}
+.ctrl-btns{display:flex;gap:5px;margin-left:auto;}
+.ctrl-btn{font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;
+  cursor:pointer;border:1px solid var(--border);color:var(--dim);background:transparent;transition:all .15s;}
+.ctrl-btn:hover{border-color:var(--accent);color:var(--accent);}
+.ctrl-btn.hi{background:var(--accent);color:#000;border-color:var(--accent);}
 .sec{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
   color:var(--muted);margin:28px 0 14px;display:flex;align-items:center;gap:10px;}
 .sec::after{content:'';flex:1;height:1px;background:var(--border);}
-.filter-panel{background:var(--card);border:1px solid var(--border);border-radius:14px;
-  padding:16px 20px;margin-bottom:20px;display:flex;flex-direction:column;gap:14px;}
-.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-.filter-label{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;
-  color:var(--muted);min-width:72px;font-family:var(--mono);}
-.chip-group{display:flex;gap:7px;flex-wrap:wrap;flex:1;}
-.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:8px;
-  cursor:pointer;border:1px solid var(--border);background:var(--surface);
-  font-family:var(--mono);font-size:10px;font-weight:700;color:var(--muted);
-  transition:all .15s;user-select:none;white-space:nowrap;}
-.chip:hover{border-color:var(--accent);color:var(--accent);}
-.chip.on{color:#000 !important;border-color:transparent !important;}
-.chip .cdot2{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
-.chip .cst{font-size:8px;}
-.ctrl-btns{display:flex;gap:5px;margin-left:auto;}
-.ctrl-btn{font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 11px;border-radius:5px;
-  cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;transition:all .15s;}
-.ctrl-btn:hover{border-color:var(--accent);color:var(--accent);}
-.ctrl-btn.hi{background:var(--accent);color:#000;border-color:var(--accent);}
-.filter-div{height:1px;background:var(--border);}
 .tabs{display:flex;gap:4px;margin-bottom:18px;}
 .tab{font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 14px;border-radius:6px;
   cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;transition:all .15s;}
@@ -154,20 +156,20 @@ footer{position:relative;z-index:1;text-align:center;padding:18px 28px;
 <div id="status"><div class="dot" id="sdot"></div><span id="smsg">Initializing…</span></div>
 
 <main>
-  <div id="pills">
-    <div class="pill" id="pill-xrp"><div class="dot2" style="background:#00d4ff"></div>
-      <div><div class="pl">XRP / USD</div><div class="pv"><span class="sk" style="width:70px;height:14px"> </span></div></div></div>
-    <div class="pill" id="pill-btc"><div class="dot2" style="background:#f7931a"></div>
-      <div><div class="pl">BTC / USD</div><div class="pv"><span class="sk" style="width:90px;height:14px"> </span></div></div></div>
-    <div class="pill" id="pill-eth"><div class="dot2" style="background:#627eea"></div>
-      <div><div class="pl">ETH / USD</div><div class="pv"><span class="sk" style="width:80px;height:14px"> </span></div></div></div>
-    <div class="pill" id="pill-rlusd"><div class="dot2" style="background:#10b981"></div>
-      <div><div class="pl">RLUSD / USD</div><div class="pv"><span class="sk" style="width:55px;height:14px"> </span></div></div></div>
-    <div class="pill" style="margin-left:auto"><div class="dot2" style="background:#64748b"></div>
-      <div><div class="pl">KRW / USD</div><div class="pv" id="krw-rate">─</div></div></div>
-  </div>
-
-  <div class="filter-panel">
+  <div class="ctrl-bar">
+    <div class="pills-row">
+      <div class="pill" id="pill-xrp"><div class="dot2" style="background:#00d4ff"></div>
+        <div><div class="pl">XRP / USD</div><div class="pv"><span class="sk" style="width:70px;height:13px"> </span></div></div></div>
+      <div class="pill" id="pill-btc"><div class="dot2" style="background:#f7931a"></div>
+        <div><div class="pl">BTC / USD</div><div class="pv"><span class="sk" style="width:90px;height:13px"> </span></div></div></div>
+      <div class="pill" id="pill-eth"><div class="dot2" style="background:#627eea"></div>
+        <div><div class="pl">ETH / USD</div><div class="pv"><span class="sk" style="width:80px;height:13px"> </span></div></div></div>
+      <div class="pill" id="pill-rlusd"><div class="dot2" style="background:#10b981"></div>
+        <div><div class="pl">RLUSD / USD</div><div class="pv"><span class="sk" style="width:55px;height:13px"> </span></div></div></div>
+      <div class="pill" style="margin-left:auto"><div class="dot2" style="background:#64748b"></div>
+        <div><div class="pl">KRW / USD</div><div class="pv" id="krw-rate">─</div></div></div>
+    </div>
+    <div class="bar-div"></div>
     <div class="filter-row">
       <span class="filter-label">EXCHANGES</span>
       <div class="chip-group" id="ex-chips"></div>
@@ -176,7 +178,6 @@ footer{position:relative;z-index:1;text-align:center;padding:18px 28px;
         <button class="ctrl-btn" onclick="selectNone('ex')">None</button>
       </div>
     </div>
-    <div class="filter-div"></div>
     <div class="filter-row">
       <span class="filter-label">COINS</span>
       <div class="chip-group" id="coin-chips"></div>
@@ -185,6 +186,14 @@ footer{position:relative;z-index:1;text-align:center;padding:18px 28px;
         <button class="ctrl-btn" onclick="selectNone('coin')">None</button>
       </div>
     </div>
+  </div>
+
+  <div class="sec">Charts</div>
+  <div class="charts-grid">
+    <div class="chart-card"><div class="chart-title" id="bar-lbl">Daily Volume (USD)</div><canvas id="barChart"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Volume Share %</div><canvas id="donutChart"></canvas></div>
+    <div class="chart-card"><div class="chart-title" id="cmp-lbl">Exchange Breakdown</div><canvas id="cmpChart"></canvas></div>
+    <div class="chart-card"><div class="chart-title">Price USD (excl. BTC)</div><canvas id="priceChart"></canvas></div>
   </div>
 
   <div class="sec">Volume Breakdown</div>
@@ -204,14 +213,6 @@ footer{position:relative;z-index:1;text-align:center;padding:18px 28px;
       </tr></thead>
       <tbody id="vol-tbody"><tr><td colspan="7" style="text-align:center;padding:36px;color:var(--muted)">Fetching live data…</td></tr></tbody>
     </table>
-  </div>
-
-  <div class="sec">Charts</div>
-  <div class="charts-grid">
-    <div class="chart-card"><div class="chart-title" id="bar-lbl">Daily Volume (USD)</div><canvas id="barChart"></canvas></div>
-    <div class="chart-card"><div class="chart-title">Volume Share %</div><canvas id="donutChart"></canvas></div>
-    <div class="chart-card"><div class="chart-title" id="cmp-lbl">Exchange Breakdown</div><canvas id="cmpChart"></canvas></div>
-    <div class="chart-card"><div class="chart-title">Price USD (excl. BTC)</div><canvas id="priceChart"></canvas></div>
   </div>
 </main>
 
