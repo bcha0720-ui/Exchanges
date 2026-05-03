@@ -1,627 +1,1271 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌊 XRP Volume Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<style>
-:root{
-  --bg:#080c14;--surface:#0d1420;--card:#111926;--border:#1e2d44;
-  --accent:#00d4ff;--purple:#7c3aed;--amber:#f59e0b;--green:#10b981;
-  --text:#e2e8f0;--muted:#64748b;--dim:#94a3b8;--up:#22c55e;
-  --mono:'Space Mono',monospace;--ui:'Syne',sans-serif;
-}
-*{margin:0;padding:0;box-sizing:border-box;}
-html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--text);font-family:var(--ui);min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;
-  background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);
-  background-size:44px 44px;pointer-events:none;z-index:0;}
-header{position:relative;z-index:2;padding:22px 28px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
-  background:linear-gradient(180deg,rgba(0,212,255,.05) 0%,transparent 100%);}
-.logo{display:flex;align-items:center;gap:12px;}
-.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--purple));
-  border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;
-  box-shadow:0 0 18px rgba(0,212,255,.25);}
-.logo h1{font-size:18px;font-weight:800;letter-spacing:-.3px;
-  background:linear-gradient(90deg,var(--accent),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.logo p{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
-.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-#last-upd{font-family:var(--mono);font-size:10px;color:var(--muted);
-  background:var(--surface);border:1px solid var(--border);padding:5px 10px;border-radius:5px;}
-.btn{background:linear-gradient(135deg,var(--accent),#0ea5e9);color:#000;
-  font-family:var(--ui);font-weight:700;font-size:12px;border:none;border-radius:7px;
-  padding:7px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;
-  transition:opacity .2s,transform .1s;box-shadow:0 0 14px rgba(0,212,255,.2);}
-.btn:hover{opacity:.9;transform:translateY(-1px);}
-.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
-.spinner{width:12px;height:12px;border:2px solid rgba(0,0,0,.25);border-top-color:#000;
-  border-radius:50%;animation:spin .7s linear infinite;display:none;}
-@keyframes spin{to{transform:rotate(360deg);}}
-#status{position:relative;z-index:1;padding:8px 28px;font-family:var(--mono);font-size:11px;
-  background:rgba(0,212,255,.03);border-bottom:1px solid var(--border);
-  color:var(--muted);min-height:32px;display:flex;align-items:center;gap:7px;}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
-.dot.live{background:var(--up);box-shadow:0 0 7px var(--up);animation:pulse 2s infinite;}
-.dot.loading{background:var(--accent);box-shadow:0 0 7px var(--accent);animation:pulse .7s infinite;}
-.dot.err{background:#ef4444;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
-main{position:relative;z-index:1;padding:24px 28px;max-width:1700px;margin:0 auto;}
-/* ── Unified control bar ── */
-.ctrl-bar{background:var(--card);border:1px solid var(--border);border-radius:14px;
-  padding:16px 20px;margin-bottom:20px;display:flex;flex-direction:column;gap:0;}
-.pills-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:14px;}
-.pill{background:var(--surface);border:1px solid var(--border);border-radius:8px;
-  padding:8px 14px;display:flex;align-items:center;gap:9px;transition:border-color .2s;}
-.pill:hover{border-color:var(--accent);}
-.pill .dot2{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.pill .pl{font-size:9px;color:var(--muted);font-family:var(--mono);}
-.pill .pv{font-size:14px;font-weight:700;font-family:var(--mono);color:var(--text);}
-.bar-div{height:1px;background:var(--border);margin:0 -20px;width:calc(100% + 40px);}
-.filter-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding-top:12px;}
-.filter-row+.filter-row{padding-top:10px;}
-.filter-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-  color:var(--muted);width:82px;flex-shrink:0;font-family:var(--mono);}
-.chip-group{display:flex;gap:7px;flex-wrap:wrap;flex:1;}
-.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:8px;
-  cursor:pointer;border:1px solid var(--border);background:var(--surface);
-  font-family:var(--mono);font-size:12px;font-weight:700;color:var(--dim);
-  transition:all .15s;user-select:none;white-space:nowrap;}
-.chip:hover{border-color:var(--accent);color:var(--text);}
-.chip.on{color:#000 !important;border-color:transparent !important;}
-.chip .cdot2{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.chip .cst{font-size:10px;}
-.ctrl-btns{display:flex;gap:5px;margin-left:auto;}
-.ctrl-btn{font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;
-  cursor:pointer;border:1px solid var(--border);color:var(--dim);background:transparent;transition:all .15s;}
-.ctrl-btn:hover{border-color:var(--accent);color:var(--accent);}
-.ctrl-btn.hi{background:var(--accent);color:#000;border-color:var(--accent);}
-.sec{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
-  color:var(--muted);margin:28px 0 14px;display:flex;align-items:center;gap:10px;}
-.sec::after{content:'';flex:1;height:1px;background:var(--border);}
-.tabs{display:flex;gap:4px;margin-bottom:18px;}
-.tab{font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 14px;border-radius:6px;
-  cursor:pointer;border:1px solid var(--border);color:var(--muted);background:transparent;transition:all .15s;}
-.tab.active{background:var(--accent);color:#000;border-color:var(--accent);box-shadow:0 0 10px rgba(0,212,255,.25);}
-.tab:hover:not(.active){border-color:var(--accent);color:var(--accent);}
-.vtable-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:auto;margin-bottom:6px;}
-.vtable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;min-width:820px;}
-.vtable thead tr{background:var(--surface);}
-.vtable th{padding:11px 16px;text-align:right;font-size:9px;letter-spacing:1.5px;
-  text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
-.vtable th:first-child,.vtable th:nth-child(2){text-align:left;}
-.vtable td{padding:10px 16px;text-align:right;border-bottom:1px solid rgba(30,45,68,.5);
-  color:var(--text);white-space:nowrap;vertical-align:middle;}
-.vtable td:first-child{text-align:left;}
-.vtable td:nth-child(2){text-align:left;}
-.vtable tr.group-row td{background:rgba(0,212,255,.02);}
-.vtable tr:hover:not(.sep-row) td{background:rgba(0,212,255,.04);}
-.vtable tr.sep-row td{padding:0;height:2px;background:var(--border);border:none;}
-.vtable tr:last-child td{border-bottom:none;}
-.coin-lbl{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;}
-.cdot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.ex-tag{font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap;display:inline-block;}
-.ex-tag.tot{background:rgba(255,255,255,.04);color:var(--dim);border:1px solid var(--border);}
-.ex-tag.ub {background:rgba(0,212,255,.1); color:#00d4ff;border:1px solid rgba(0,212,255,.25);}
-.ex-tag.bt {background:rgba(255,80,80,.1);  color:#ff5050;border:1px solid rgba(255,80,80,.25);}
-.ex-tag.co {background:rgba(124,58,237,.1); color:#a78bfa;border:1px solid rgba(124,58,237,.25);}
-.ex-tag.krk{background:rgba(126,68,234,.1);color:#7e44ea;border:1px solid rgba(126,68,234,.25);}
-.ex-tag.bnu{background:rgba(240,185,11,.1);color:#f0b90b;border:1px solid rgba(240,185,11,.25);}
-.ex-tag.cbs{background:rgba(0,130,255,.1); color:#0082ff;border:1px solid rgba(0,130,255,.25);}
-.ex-tag.bst{background:rgba(0,159,220,.1); color:#009fdc;border:1px solid rgba(0,159,220,.25);}
-.ex-tag.okx{background:rgba(220,220,220,.07);color:#e2e8f0;border:1px solid rgba(255,255,255,.15);}
-.ex-tag.gem{background:rgba(0,210,153,.1); color:#00d299;border:1px solid rgba(0,210,153,.25);}
-.vc{color:var(--text);}
-.vkrw{color:var(--dim);}
-.vusd{color:var(--amber);font-weight:700;}
-.vrange{color:var(--muted);font-size:10px;}
-.sub-row td:nth-child(2){padding-left:4px;}
-.note-sm{font-size:9px;color:var(--muted);margin-left:4px;}
-.charts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;}
-.chart-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;}
-.chart-title{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;}
-canvas{max-height:200px;}
-.sk{background:linear-gradient(90deg,var(--surface) 25%,var(--card) 50%,var(--surface) 75%);
-  background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px;display:inline-block;}
-@keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
-footer{position:relative;z-index:1;text-align:center;padding:18px 28px;
-  font-family:var(--mono);font-size:10px;color:var(--muted);
-  border-top:1px solid var(--border);margin-top:28px;}
-::-webkit-scrollbar{width:5px;height:5px;}
-::-webkit-scrollbar-track{background:var(--bg);}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌊 XRP Volume Tracker</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap"
+    rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #080c14;
+      --surface: #0d1420;
+      --card: #111926;
+      --border: #1e2d44;
+      --accent: #00d4ff;
+      --purple: #7c3aed;
+      --amber: #f59e0b;
+      --green: #10b981;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --dim: #94a3b8;
+      --up: #22c55e;
+      --mono: 'Space Mono', monospace;
+      --ui: 'Syne', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--ui);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(0, 212, 255, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, .025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      position: relative;
+      z-index: 2;
+      padding: 22px 28px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(0, 212, 255, .05) 0%, transparent 100%);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      box-shadow: 0 0 18px rgba(0, 212, 255, .25);
+    }
+
+    .logo h1 {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.3px;
+      background: linear-gradient(90deg, var(--accent), #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo p {
+      font-size: 10px;
+      color: var(--muted);
+      font-family: var(--mono);
+      margin-top: 1px;
+    }
+
+    .hdr-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    #last-upd {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 5px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--accent), #0ea5e9);
+      color: #000;
+      font-family: var(--ui);
+      font-weight: 700;
+      font-size: 12px;
+      border: none;
+      border-radius: 7px;
+      padding: 7px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 0 14px rgba(0, 212, 255, .2);
+    }
+
+    .btn:hover {
+      opacity: .9;
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(0, 0, 0, .25);
+      border-top-color: #000;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    #status {
+      position: relative;
+      z-index: 1;
+      padding: 8px 28px;
+      font-family: var(--mono);
+      font-size: 11px;
+      background: rgba(0, 212, 255, .03);
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      min-height: 32px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      flex-shrink: 0;
+    }
+
+    .dot.live {
+      background: var(--up);
+      box-shadow: 0 0 7px var(--up);
+      animation: pulse 2s infinite;
+    }
+
+    .dot.loading {
+      background: var(--accent);
+      box-shadow: 0 0 7px var(--accent);
+      animation: pulse .7s infinite;
+    }
+
+    .dot.err {
+      background: #ef4444;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: .35;
+      }
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      padding: 24px 28px;
+      max-width: 1700px;
+      margin: 0 auto;
+    }
+
+    /* ── Unified control bar ── */
+    .ctrl-bar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .pills-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding-bottom: 14px;
+    }
+
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      transition: border-color .2s;
+    }
+
+    .pill:hover {
+      border-color: var(--accent);
+    }
+
+    .pill .dot2 {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .pill .pl {
+      font-size: 9px;
+      color: var(--muted);
+      font-family: var(--mono);
+    }
+
+    .pill .pv {
+      font-size: 14px;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--text);
+    }
+
+    .bar-div {
+      height: 1px;
+      background: var(--border);
+      margin: 0 -20px;
+      width: calc(100% + 40px);
+    }
+
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding-top: 12px;
+    }
+
+    .filter-row+.filter-row {
+      padding-top: 10px;
+    }
+
+    .filter-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      width: 82px;
+      flex-shrink: 0;
+      font-family: var(--mono);
+    }
+
+    .chip-group {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--dim);
+      transition: all .15s;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .chip:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .chip.on {
+      color: #000 !important;
+      border-color: transparent !important;
+    }
+
+    .chip .cdot2 {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .chip .cst {
+      font-size: 10px;
+    }
+
+    .ctrl-btns {
+      display: flex;
+      gap: 5px;
+      margin-left: auto;
+    }
+
+    .ctrl-btn {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      color: var(--dim);
+      background: transparent;
+      transition: all .15s;
+    }
+
+    .ctrl-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .ctrl-btn.hi {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+
+    .sec {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 28px 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sec::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 18px;
+    }
+
+    .tab {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: transparent;
+      transition: all .15s;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(0, 212, 255, .25);
+    }
+
+    .tab:hover:not(.active) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .vtable-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: auto;
+      margin-bottom: 6px;
+    }
+
+    .vtable {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--mono);
+      font-size: 12px;
+      min-width: 820px;
+    }
+
+    .vtable thead tr {
+      background: var(--surface);
+    }
+
+    .vtable th {
+      padding: 11px 16px;
+      text-align: right;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .vtable th:first-child,
+    .vtable th:nth-child(2) {
+      text-align: left;
+    }
+
+    .vtable td {
+      padding: 10px 16px;
+      text-align: right;
+      border-bottom: 1px solid rgba(30, 45, 68, .5);
+      color: var(--text);
+      white-space: nowrap;
+      vertical-align: middle;
+    }
+
+    .vtable td:first-child {
+      text-align: left;
+    }
+
+    .vtable td:nth-child(2) {
+      text-align: left;
+    }
+
+    .vtable tr.group-row td {
+      background: rgba(0, 212, 255, .02);
+    }
+
+    .vtable tr:hover:not(.sep-row) td {
+      background: rgba(0, 212, 255, .04);
+    }
+
+    .vtable tr.sep-row td {
+      padding: 0;
+      height: 2px;
+      background: var(--border);
+      border: none;
+    }
+
+    .vtable tr:last-child td {
+      border-bottom: none;
+    }
+
+    .coin-lbl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .cdot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .ex-tag {
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .ex-tag.tot {
+      background: rgba(255, 255, 255, .04);
+      color: var(--dim);
+      border: 1px solid var(--border);
+    }
+
+    .ex-tag.ub {
+      background: rgba(0, 212, 255, .1);
+      color: #00d4ff;
+      border: 1px solid rgba(0, 212, 255, .25);
+    }
+
+    .ex-tag.bt {
+      background: rgba(255, 80, 80, .1);
+      color: #ff5050;
+      border: 1px solid rgba(255, 80, 80, .25);
+    }
+
+    .ex-tag.co {
+      background: rgba(124, 58, 237, .1);
+      color: #a78bfa;
+      border: 1px solid rgba(124, 58, 237, .25);
+    }
+
+    .ex-tag.krk {
+      background: rgba(126, 68, 234, .1);
+      color: #7e44ea;
+      border: 1px solid rgba(126, 68, 234, .25);
+    }
+
+    .ex-tag.bnu {
+      background: rgba(240, 185, 11, .1);
+      color: #f0b90b;
+      border: 1px solid rgba(240, 185, 11, .25);
+    }
+
+    .ex-tag.cbs {
+      background: rgba(0, 130, 255, .1);
+      color: #0082ff;
+      border: 1px solid rgba(0, 130, 255, .25);
+    }
+
+    .ex-tag.bst {
+      background: rgba(0, 159, 220, .1);
+      color: #009fdc;
+      border: 1px solid rgba(0, 159, 220, .25);
+    }
+
+    .ex-tag.okx {
+      background: rgba(220, 220, 220, .07);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, .15);
+    }
+
+    .ex-tag.gem {
+      background: rgba(0, 210, 153, .1);
+      color: #00d299;
+      border: 1px solid rgba(0, 210, 153, .25);
+    }
+
+    .vc {
+      color: var(--text);
+    }
+
+    .vkrw {
+      color: var(--dim);
+    }
+
+    .vusd {
+      color: var(--amber);
+      font-weight: 700;
+    }
+
+    .vrange {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .sub-row td:nth-child(2) {
+      padding-left: 4px;
+    }
+
+    .note-sm {
+      font-size: 9px;
+      color: var(--muted);
+      margin-left: 4px;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .chart-title {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    canvas {
+      max-height: 200px;
+    }
+
+    .sk {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--card) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 18px 28px;
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 28px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 3px;
+    }
+  </style>
 </head>
+
 <body>
-<header>
-  <div class="logo">
-    <div class="logo-icon">🌊</div>
-    <div>
-      <h1>XRP Multi-Exchange Volume Tracker</h1>
-      <p>UPBIT · BITHUMB · COINONE · KRAKEN · BINANCE.US · COINBASE · BITSTAMP · OKX · GEMINI</p>
-    </div>
-  </div>
-  <div class="hdr-right">
-    <div id="last-upd">─── not fetched yet ───</div>
-    <button class="btn" id="refreshBtn" onclick="loadAll()">
-      <span class="spinner" id="spinner"></span>
-      <span id="btnTxt">🔄 Refresh</span>
-    </button>
-  </div>
-</header>
-
-<div id="status"><div class="dot" id="sdot"></div><span id="smsg">Initializing…</span></div>
-
-<main>
-  <div class="ctrl-bar">
-    <div class="pills-row">
-      <div class="pill" id="pill-xrp"><div class="dot2" style="background:#00d4ff"></div>
-        <div><div class="pl">XRP / USD</div><div class="pv"><span class="sk" style="width:70px;height:13px"> </span></div></div></div>
-      <div class="pill" id="pill-btc"><div class="dot2" style="background:#f7931a"></div>
-        <div><div class="pl">BTC / USD</div><div class="pv"><span class="sk" style="width:90px;height:13px"> </span></div></div></div>
-      <div class="pill" id="pill-eth"><div class="dot2" style="background:#627eea"></div>
-        <div><div class="pl">ETH / USD</div><div class="pv"><span class="sk" style="width:80px;height:13px"> </span></div></div></div>
-      <div class="pill" id="pill-rlusd"><div class="dot2" style="background:#10b981"></div>
-        <div><div class="pl">RLUSD / USD</div><div class="pv"><span class="sk" style="width:55px;height:13px"> </span></div></div></div>
-      <div class="pill" style="margin-left:auto"><div class="dot2" style="background:#64748b"></div>
-        <div><div class="pl">KRW / USD</div><div class="pv" id="krw-rate">─</div></div></div>
-    </div>
-    <div class="bar-div"></div>
-    <div class="filter-row">
-      <span class="filter-label">EXCHANGES</span>
-      <div class="chip-group" id="ex-chips"></div>
-      <div class="ctrl-btns">
-        <button class="ctrl-btn hi" id="exAllBtn" onclick="selectAll('ex')">All</button>
-        <button class="ctrl-btn" onclick="selectNone('ex')">None</button>
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🌊</div>
+      <div>
+        <h1>XRP Multi-Exchange Volume Tracker</h1>
+        <p>UPBIT · BITHUMB · COINONE · KRAKEN · BINANCE.US · COINBASE · BITSTAMP · OKX · GEMINI</p>
       </div>
     </div>
-    <div class="filter-row">
-      <span class="filter-label">COINS</span>
-      <div class="chip-group" id="coin-chips"></div>
-      <div class="ctrl-btns">
-        <button class="ctrl-btn hi" id="coinAllBtn" onclick="selectAll('coin')">All</button>
-        <button class="ctrl-btn" onclick="selectNone('coin')">None</button>
+    <div class="hdr-right">
+      <div id="last-upd">─── not fetched yet ───</div>
+      <button class="btn" id="refreshBtn" onclick="loadAll()">
+        <span class="spinner" id="spinner"></span>
+        <span id="btnTxt">🔄 Refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <div id="status">
+    <div class="dot" id="sdot"></div><span id="smsg">Initializing…</span>
+  </div>
+
+  <main>
+    <div class="ctrl-bar">
+      <div class="pills-row">
+        <div class="pill" id="pill-xrp">
+          <div class="dot2" style="background:#00d4ff"></div>
+          <div>
+            <div class="pl">XRP / USD</div>
+            <div class="pv"><span class="sk" style="width:70px;height:13px"> </span></div>
+          </div>
+        </div>
+        <div class="pill" id="pill-btc">
+          <div class="dot2" style="background:#f7931a"></div>
+          <div>
+            <div class="pl">BTC / USD</div>
+            <div class="pv"><span class="sk" style="width:90px;height:13px"> </span></div>
+          </div>
+        </div>
+        <div class="pill" id="pill-eth">
+          <div class="dot2" style="background:#627eea"></div>
+          <div>
+            <div class="pl">ETH / USD</div>
+            <div class="pv"><span class="sk" style="width:80px;height:13px"> </span></div>
+          </div>
+        </div>
+        <div class="pill" id="pill-rlusd">
+          <div class="dot2" style="background:#10b981"></div>
+          <div>
+            <div class="pl">RLUSD / USD</div>
+            <div class="pv"><span class="sk" style="width:55px;height:13px"> </span></div>
+          </div>
+        </div>
+        <div class="pill" style="margin-left:auto">
+          <div class="dot2" style="background:#64748b"></div>
+          <div>
+            <div class="pl">KRW / USD</div>
+            <div class="pv" id="krw-rate">─</div>
+          </div>
+        </div>
+      </div>
+      <div class="bar-div"></div>
+      <div class="filter-row">
+        <span class="filter-label">EXCHANGES</span>
+        <div class="chip-group" id="ex-chips"></div>
+        <div class="ctrl-btns">
+          <button class="ctrl-btn hi" id="exAllBtn" onclick="selectAll('ex')">All</button>
+          <button class="ctrl-btn" onclick="selectNone('ex')">None</button>
+        </div>
+      </div>
+      <div class="filter-row">
+        <span class="filter-label">COINS</span>
+        <div class="chip-group" id="coin-chips"></div>
+        <div class="ctrl-btns">
+          <button class="ctrl-btn hi" id="coinAllBtn" onclick="selectAll('coin')">All</button>
+          <button class="ctrl-btn" onclick="selectNone('coin')">None</button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="sec">Charts</div>
-  <div class="charts-grid">
-    <div class="chart-card"><div class="chart-title" id="bar-lbl">Daily Volume (USD)</div><canvas id="barChart"></canvas></div>
-    <div class="chart-card"><div class="chart-title">Volume Share %</div><canvas id="donutChart"></canvas></div>
-    <div class="chart-card"><div class="chart-title" id="cmp-lbl">Exchange Breakdown</div><canvas id="cmpChart"></canvas></div>
-    <div class="chart-card"><div class="chart-title">Price USD (excl. BTC)</div><canvas id="priceChart"></canvas></div>
-  </div>
+    <div class="sec">Charts</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title" id="bar-lbl">Daily Volume (USD)</div><canvas id="barChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Volume Share %</div><canvas id="donutChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title" id="cmp-lbl">Exchange Breakdown</div><canvas id="cmpChart"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Price USD (excl. BTC)</div><canvas id="priceChart"></canvas>
+      </div>
+    </div>
 
-  <div class="sec">Volume Breakdown</div>
-  <div class="tabs">
-    <button class="tab active" data-p="daily"   onclick="setTab(this)">Daily</button>
-    <button class="tab"        data-p="weekly"  onclick="setTab(this)">7-Day</button>
-    <button class="tab"        data-p="monthly" onclick="setTab(this)">30-Day</button>
-    <button class="tab"        data-p="yearly"  onclick="setTab(this)">365-Day</button>
-  </div>
+    <div class="sec">Volume Breakdown</div>
+    <div class="tabs">
+      <button class="tab active" data-p="daily" onclick="setTab(this)">Daily</button>
+      <button class="tab" data-p="weekly" onclick="setTab(this)">7-Day</button>
+      <button class="tab" data-p="monthly" onclick="setTab(this)">30-Day</button>
+      <button class="tab" data-p="yearly" onclick="setTab(this)">365-Day</button>
+    </div>
 
-  <div class="vtable-wrap">
-    <table class="vtable">
-      <thead><tr>
-        <th style="min-width:80px">Coin</th><th style="min-width:110px">Exchange</th>
-        <th>Volume</th><th>Value (KRW eq.)</th><th>Value (USD)</th>
-        <th>Price (USD)</th><th>Date / Range</th>
-      </tr></thead>
-      <tbody id="vol-tbody"><tr><td colspan="7" style="text-align:center;padding:36px;color:var(--muted)">Fetching live data…</td></tr></tbody>
-    </table>
-  </div>
-</main>
+    <div class="vtable-wrap">
+      <table class="vtable">
+        <thead>
+          <tr>
+            <th style="min-width:80px">Coin</th>
+            <th style="min-width:110px">Exchange</th>
+            <th>Volume</th>
+            <th>Value (KRW eq.)</th>
+            <th>Value (USD)</th>
+            <th>Price (USD)</th>
+            <th>Date / Range</th>
+          </tr>
+        </thead>
+        <tbody id="vol-tbody">
+          <tr>
+            <td colspan="7" style="text-align:center;padding:36px;color:var(--muted)">Fetching live data…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
 
-<footer>
-  Upbit · Bithumb · Coinone (via proxy) · Kraken · Binance.US · Coinbase · Bitstamp · OKX · Gemini
-  · KRW/USD: exchangerate-api.com · RLUSD: Coinone/Bithumb (KRW) + Kraken/Bitstamp/OKX/Gemini (USD)
-</footer>
+  <footer>
+    Upbit · Bithumb · Coinone (via proxy) · Kraken · Binance.US · Coinbase · Bitstamp · OKX · Gemini
+    · KRW/USD: exchangerate-api.com · RLUSD: Coinone/Bithumb (KRW) + Kraken/Bitstamp/OKX/Gemini (USD)
+  </footer>
 
-<script>
-// ── Coinone is fetched via /proxy/coinone/<symbol> on this same server.
-//    All other exchanges are called directly from the browser (they have CORS headers).
-//    PROXY_BASE auto-detects: localhost in dev, same origin in production.
-const PROXY_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? `http://${window.location.host}`
-  : window.location.origin;
+  <script>
+    // ── Coinone is fetched via /proxy/coinone/<symbol> on this same server.
+    //    All other exchanges are called directly from the browser (they have CORS headers).
+    //    PROXY_BASE auto-detects: localhost in dev, same origin in production.
+    const PROXY_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? `http://${window.location.host}`
+      : window.location.origin;
 
-const EXCHANGES = {
-  upbit:    {label:'Upbit',      color:'#00d4ff', tag:'ub',  krw:true },
-  bithumb:  {label:'Bithumb',    color:'#ff5050', tag:'bt',  krw:true },
-  coinone:  {label:'Coinone',    color:'#a78bfa', tag:'co',  krw:true },
-  kraken:   {label:'Kraken',     color:'#7e44ea', tag:'krk', krw:false},
-  binanceus:{label:'Binance.US', color:'#f0b90b', tag:'bnu', krw:false},
-  coinbase: {label:'Coinbase',   color:'#0082ff', tag:'cbs', krw:false},
-  bitstamp: {label:'Bitstamp',   color:'#009fdc', tag:'bst', krw:false},
-  okx:      {label:'OKX',        color:'#e2e8f0', tag:'okx', krw:false},
-  gemini:   {label:'Gemini',     color:'#00d299', tag:'gem', krw:false},
-};
-
-const COINS = {
-  XRP:  {dec:0, color:'#00d4ff',
-    upbit:'KRW-XRP',   bithumb:'XRP',   coinone:'XRP',
-    kraken:'XXRPZUSD', binanceus:'XRPUSDT', coinbase:'XRP-USD',
-    bitstamp:'xrpusd', okx:'XRP-USDT',      gemini:'xrpusd'},
-  BTC:  {dec:4, color:'#f7931a',
-    upbit:'KRW-BTC',   bithumb:'BTC',   coinone:'BTC',
-    kraken:'XXBTZUSD', binanceus:'BTCUSDT',  coinbase:'BTC-USD',
-    bitstamp:'btcusd', okx:'BTC-USDT',       gemini:'btcusd'},
-  ETH:  {dec:2, color:'#627eea',
-    upbit:'KRW-ETH',   bithumb:'ETH',   coinone:'ETH',
-    kraken:'XETHZUSD', binanceus:'ETHUSDT',  coinbase:'ETH-USD',
-    bitstamp:'ethusd', okx:'ETH-USDT',       gemini:'ethusd'},
-  RLUSD:{dec:2, color:'#10b981',
-    bithumb:'RLUSD', coinone:'RLUSD',
-    kraken:'RLUSDUSD', bitstamp:'rlusdusd',
-    okx:'RLUSD-USDT',  gemini:'rlusdusd'},
-};
-
-let G={data:{},krwUsd:0.000713,period:'daily',selEx:new Set(Object.keys(EXCHANGES)),selCoin:new Set(Object.keys(COINS))};
-let charts={};
-
-// ── Chips ──────────────────────────────────────────────────────
-function initChips(){
-  const exW=document.getElementById('ex-chips');
-  for(const [id,ex] of Object.entries(EXCHANGES)) exW.appendChild(makeChip(id,ex.label,ex.color,'ex'));
-  const cW=document.getElementById('coin-chips');
-  for(const [coin,cfg] of Object.entries(COINS)) cW.appendChild(makeChip(coin,coin,cfg.color,'coin'));
-}
-function makeChip(id,label,color,type){
-  const c=document.createElement('div');
-  c.className='chip on';c.id=`chip-${type}-${id}`;
-  c.style.background=color+'22';c.style.borderColor=color+'88';
-  c.innerHTML=`<div class="cdot2" style="background:${color}"></div>${label}`+(type==='ex'?`<span class="cst" id="cst-${id}"> ⏳</span>`:'');
-  c.onclick=()=>toggleChip(type,id);return c;
-}
-function toggleChip(type,id){
-  const sel=type==='ex'?G.selEx:G.selCoin;
-  const c=document.getElementById(`chip-${type}-${id}`);
-  const color=type==='ex'?EXCHANGES[id]?.color:COINS[id]?.color;
-  if(!c)return;
-  if(sel.has(id)){sel.delete(id);c.classList.remove('on');c.style.background='';c.style.borderColor='';}
-  else{sel.add(id);c.classList.add('on');c.style.background=color+'22';c.style.borderColor=color+'88';}
-  updateAllBtns();renderTable();buildCharts();
-}
-function selectAll(type){
-  const keys=type==='ex'?Object.keys(EXCHANGES):Object.keys(COINS);
-  const sel=type==='ex'?G.selEx:G.selCoin;
-  keys.forEach(id=>{sel.add(id);const c=document.getElementById(`chip-${type}-${id}`);const color=type==='ex'?EXCHANGES[id]?.color:COINS[id]?.color;if(c){c.classList.add('on');c.style.background=color+'22';c.style.borderColor=color+'88';}});
-  updateAllBtns();renderTable();buildCharts();
-}
-function selectNone(type){
-  const keys=type==='ex'?Object.keys(EXCHANGES):Object.keys(COINS);
-  const sel=type==='ex'?G.selEx:G.selCoin;
-  keys.forEach(id=>{sel.delete(id);const c=document.getElementById(`chip-${type}-${id}`);if(c){c.classList.remove('on');c.style.background='';c.style.borderColor='';}});
-  updateAllBtns();renderTable();buildCharts();
-}
-function updateAllBtns(){
-  document.getElementById('exAllBtn').classList.toggle('hi',Object.keys(EXCHANGES).every(id=>G.selEx.has(id)));
-  document.getElementById('coinAllBtn').classList.toggle('hi',Object.keys(COINS).every(id=>G.selCoin.has(id)));
-}
-function setChipStatus(id,ok){
-  const el=document.getElementById(`cst-${id}`);
-  if(el){el.textContent=ok?' ✓':' ✗';el.style.color=ok?'inherit':'#ef4444';}
-}
-
-// ── Utils ───────────────────────────────────────────────────────
-const fmt=(n,d=0)=>(+n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
-const fmtU=n=>'$'+fmt(n,2);
-const fmtK=n=>'₩'+fmt(n,0);
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-function setStatus(msg,s=''){document.getElementById('smsg').textContent=msg;document.getElementById('sdot').className='dot '+s;}
-function setBusy(on){document.getElementById('refreshBtn').disabled=on;document.getElementById('spinner').style.display=on?'block':'none';document.getElementById('btnTxt').textContent=on?'Fetching…':'🔄 Refresh';}
-
-// ── FX ──────────────────────────────────────────────────────────
-async function fetchFx(){
-  try{return parseFloat((await(await fetch('https://api.exchangerate-api.com/v4/latest/KRW')).json()).rates.USD);}
-  catch{return 0.000713;}
-}
-
-// ── UPBIT ───────────────────────────────────────────────────────
-async function fetchUpbit(market,days=365){
-  const out=[];let rem=days,toDate=null;
-  while(rem>0){
-    const n=Math.min(200,rem);
-    let url=`https://api.upbit.com/v1/candles/days?market=${market}&count=${n}`;
-    if(toDate)url+=`&to=${toDate}`;
-    try{const r=await fetch(url);if(!r.ok)break;const d=await r.json();if(!d.length)break;out.push(...d);toDate=d[d.length-1].candle_date_time_utc;rem-=n;await sleep(220);}catch{break;}
-  }
-  return out;
-}
-function aggUpbit(c,n){
-  const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-  return{vol:s.reduce((a,x)=>a+parseFloat(x.candle_acc_trade_volume),0),
-    valKrw:s.reduce((a,x)=>a+parseFloat(x.candle_acc_trade_volume)*parseFloat(x.trade_price),0),
-    start:s[s.length-1].candle_date_time_kst?.split('T')[0],end:s[0].candle_date_time_kst?.split('T')[0]};
-}
-function processUpbit(c){
-  if(!c.length)return null;
-  return{close:parseFloat(c[0].trade_price),isKrw:true,
-    daily:aggUpbit(c,1),weekly:aggUpbit(c,7),monthly:aggUpbit(c,30),yearly:aggUpbit(c,365)};
-}
-
-// ── BITHUMB ─────────────────────────────────────────────────────
-// Direct browser fetch — Bithumb sends Access-Control-Allow-Origin: *
-async function fetchBithumb(symbol){
-  try{
-    const r=await fetch(`https://api.bithumb.com/public/candlestick/${symbol}_KRW/24h`,{signal:AbortSignal.timeout(12000)});
-    if(!r.ok)return null;
-    const data=await r.json();
-    if(data.status!=='0000')return null;
-    let c=(data.data??[]).slice().sort((a,b)=>Number(b[0])-Number(a[0]));
-    if(!c.length)return null;
-    const close=parseFloat(c[0][2]);
-    const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-      const vol=s.reduce((a,x)=>a+parseFloat(x[5]),0);
-      return{vol,valKrw:vol*close,start:new Date(Number(s[s.length-1][0])).toISOString().split('T')[0],end:new Date(Number(s[0][0])).toISOString().split('T')[0]};};
-    return{close,isKrw:true,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(c.length)};
-  }catch(e){console.warn('Bithumb',symbol,e.message);return null;}
-}
-
-// ── COINONE (via server proxy) ──────────────────────────────────
-// Coinone blocks all browser CORS requests. This calls our Flask
-// /proxy/coinone/<symbol> endpoint which fetches server-side and
-// adds Access-Control-Allow-Origin: * before returning.
-async function fetchCoinone(symbol){
-  try{
-    const r=await fetch(`${PROXY_BASE}/proxy/coinone/${symbol}`,{signal:AbortSignal.timeout(20000)});
-    if(!r.ok){console.warn(`Coinone proxy ${symbol} HTTP ${r.status}`);return null;}
-    const data=await r.json();
-    const arr=data.chart??(Array.isArray(data)?data:[]);
-    if(!arr.length){console.warn(`Coinone ${symbol}: empty chart`);return null;}
-    let c=arr.filter(x=>x.timestamp&&x.close)
-             .sort((a,b)=>Number(b.timestamp)-Number(a.timestamp))
-             .slice(0,365);
-    if(!c.length)return null;
-    const close=parseFloat(c[0].close);
-    const agg=n=>{
-      const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-      const vol=s.reduce((a,x)=>a+parseFloat(x.target_volume||0),0);
-      const valKrw=s.reduce((a,x)=>{const qv=parseFloat(x.quote_volume||0);return a+(qv>0?qv:parseFloat(x.target_volume||0)*parseFloat(x.close||0));},0);
-      const tsD=ts=>new Date(Number(ts)).toISOString().split('T')[0];
-      return{vol,valKrw,start:tsD(s[s.length-1].timestamp),end:tsD(s[0].timestamp)};
+    const EXCHANGES = {
+      upbit: { label: 'Upbit', color: '#00d4ff', tag: 'ub', krw: true },
+      bithumb: { label: 'Bithumb', color: '#ff5050', tag: 'bt', krw: true },
+      coinone: { label: 'Coinone', color: '#a78bfa', tag: 'co', krw: true },
+      kraken: { label: 'Kraken', color: '#7e44ea', tag: 'krk', krw: false },
+      binanceus: { label: 'Binance.US', color: '#f0b90b', tag: 'bnu', krw: false },
+      coinbase: { label: 'Coinbase', color: '#0082ff', tag: 'cbs', krw: false },
+      bitstamp: { label: 'Bitstamp', color: '#009fdc', tag: 'bst', krw: false },
+      okx: { label: 'OKX', color: '#e2e8f0', tag: 'okx', krw: false },
+      gemini: { label: 'Gemini', color: '#00d299', tag: 'gem', krw: false },
     };
-    return{close,isKrw:true,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(c.length)};
-  }catch(e){console.warn('Coinone proxy',symbol,e.message);return null;}
-}
 
-// ── KRAKEN ──────────────────────────────────────────────────────
-async function fetchKraken(pair){
-  try{
-    const r=await fetch(`https://api.kraken.com/0/public/OHLC?pair=${pair}&interval=1440`,{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)return null;const data=await r.json();if(data.error?.length)return null;
-    const key=Object.keys(data.result).find(k=>k!=='last');
-    let c=(data.result[key]??[]).slice().sort((a,b)=>b[0]-a[0]);
-    const close=parseFloat(c[0]?.[4]??0);
-    const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-      const vol=s.reduce((a,x)=>a+parseFloat(x[6]),0);
-      return{vol,valUsd:vol*close,start:new Date(s[s.length-1][0]*1000).toISOString().split('T')[0],end:new Date(s[0][0]*1000).toISOString().split('T')[0]};};
-    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(365)};
-  }catch{return null;}
-}
+    const COINS = {
+      XRP: {
+        dec: 0, color: '#00d4ff',
+        upbit: 'KRW-XRP', bithumb: 'XRP', coinone: 'XRP',
+        kraken: 'XXRPZUSD', binanceus: 'XRPUSDT', coinbase: 'XRP-USD',
+        bitstamp: 'xrpusd', okx: 'XRP-USDT', gemini: 'xrpusd'
+      },
+      BTC: {
+        dec: 4, color: '#f7931a',
+        upbit: 'KRW-BTC', bithumb: 'BTC', coinone: 'BTC',
+        kraken: 'XXBTZUSD', binanceus: 'BTCUSDT', coinbase: 'BTC-USD',
+        bitstamp: 'btcusd', okx: 'BTC-USDT', gemini: 'btcusd'
+      },
+      ETH: {
+        dec: 2, color: '#627eea',
+        upbit: 'KRW-ETH', bithumb: 'ETH', coinone: 'ETH',
+        kraken: 'XETHZUSD', binanceus: 'ETHUSDT', coinbase: 'ETH-USD',
+        bitstamp: 'ethusd', okx: 'ETH-USDT', gemini: 'ethusd'
+      },
+      RLUSD: {
+        dec: 2, color: '#10b981',
+        bithumb: 'RLUSD', coinone: 'RLUSD',
+        kraken: 'RLUSDUSD', bitstamp: 'rlusdusd',
+        okx: 'RLUSD-USDT', gemini: 'rlusdusd'
+      },
+    };
 
-// ── BINANCE.US ──────────────────────────────────────────────────
-async function fetchBinanceUS(symbol){
-  try{
-    const r=await fetch(`https://api.binance.us/api/v3/klines?symbol=${symbol}&interval=1d&limit=365`,{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)return null;let c=await r.json();c.sort((a,b)=>b[0]-a[0]);
-    const close=parseFloat(c[0]?.[4]??0);
-    const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-      return{vol:s.reduce((a,x)=>a+parseFloat(x[5]),0),valUsd:s.reduce((a,x)=>a+parseFloat(x[7]),0),
-        start:new Date(s[s.length-1][0]).toISOString().split('T')[0],end:new Date(s[0][0]).toISOString().split('T')[0]};};
-    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(365)};
-  }catch{return null;}
-}
+    let G = { data: {}, krwUsd: 0.000713, period: 'daily', selEx: new Set(Object.keys(EXCHANGES)), selCoin: new Set(Object.keys(COINS)) };
+    let charts = {};
 
-// ── COINBASE ────────────────────────────────────────────────────
-async function fetchCoinbase(productId){
-  try{
-    const end=new Date(),start=new Date(end-365*86400*1000);
-    const r=await fetch(`https://api.exchange.coinbase.com/products/${productId}/candles?granularity=86400&start=${start.toISOString()}&end=${end.toISOString()}`,{signal:AbortSignal.timeout(12000)});
-    if(!r.ok)return null;let c=await r.json();c.sort((a,b)=>b[0]-a[0]);
-    const close=parseFloat(c[0]?.[4]??0);
-    const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-      const vol=s.reduce((a,x)=>a+parseFloat(x[5]),0);
-      return{vol,valUsd:vol*close,start:new Date(s[s.length-1][0]*1000).toISOString().split('T')[0],end:new Date(s[0][0]*1000).toISOString().split('T')[0]};};
-    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(365)};
-  }catch{return null;}
-}
-
-// ── BITSTAMP ────────────────────────────────────────────────────
-async function fetchBitstamp(pair){
-  try{
-    const r=await fetch(`https://www.bitstamp.net/api/v2/ohlc/${pair}/?step=86400&limit=365`,{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)return null;const data=await r.json();
-    let c=(data.data?.ohlc??[]).slice().sort((a,b)=>b.timestamp-a.timestamp);
-    const close=parseFloat(c[0]?.close??0);
-    const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-      const vol=s.reduce((a,x)=>a+parseFloat(x.volume),0);
-      return{vol,valUsd:vol*close,start:new Date(s[s.length-1].timestamp*1000).toISOString().split('T')[0],end:new Date(s[0].timestamp*1000).toISOString().split('T')[0]};};
-    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(365)};
-  }catch{return null;}
-}
-
-// ── OKX ─────────────────────────────────────────────────────────
-async function fetchOKX(instId){
-  try{
-    const r=await fetch(`https://www.okx.com/api/v5/market/history-candles?instId=${instId}&bar=1D&limit=300`,{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)return null;const data=await r.json();
-    const c=data.data??[];const close=parseFloat(c[0]?.[4]??0);
-    const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-      const vol=s.reduce((a,x)=>a+parseFloat(x[5]),0);
-      const valUsd=s.reduce((a,x)=>a+parseFloat(x[7]||0),0)||vol*close;
-      return{vol,valUsd,start:new Date(+s[s.length-1][0]).toISOString().split('T')[0],end:new Date(+s[0][0]).toISOString().split('T')[0]};};
-    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(c.length)};
-  }catch{return null;}
-}
-
-// ── GEMINI ──────────────────────────────────────────────────────
-async function fetchGemini(symbol){
-  try{
-    const r=await fetch(`https://api.gemini.com/v2/candles/${symbol}/1day`,{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)return null;let c=await r.json();c.sort((a,b)=>b[0]-a[0]);
-    const close=parseFloat(c[0]?.[4]??0);
-    const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
-      const vol=s.reduce((a,x)=>a+parseFloat(x[5]),0);
-      return{vol,valUsd:vol*close,start:new Date(s[s.length-1][0]).toISOString().split('T')[0],end:new Date(s[0][0]).toISOString().split('T')[0]};};
-    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(c.length)};
-  }catch{return null;}
-}
-
-// ── Helpers ─────────────────────────────────────────────────────
-function getUsd(obj,period){const agg=obj?.[period];if(!agg)return 0;return obj.isKrw?(agg.valKrw??0)*G.krwUsd:(agg.valUsd??0);}
-function getPrice(obj){if(!obj?.close)return 0;return obj.isKrw?obj.close*G.krwUsd:obj.close;}
-
-// ── Pills ────────────────────────────────────────────────────────
-function renderPills(){
-  for(const [coin] of Object.entries(COINS)){
-    const key=coin.toLowerCase();let price=0;
-    for(const exId of Object.keys(EXCHANGES)){const d=G.data[exId]?.[key];if(d){price=getPrice(d);if(price)break;}}
-    if(!price)continue;
-    const el=document.querySelector(`#pill-${key} .pv`);
-    if(el)el.textContent=coin==='RLUSD'?'$'+price.toFixed(4):'$'+fmt(price,2);
-  }
-  document.getElementById('krw-rate').textContent=G.krwUsd.toFixed(6);
-}
-
-// ── Table ────────────────────────────────────────────────────────
-function renderTable(){
-  const p=G.period,tbody=document.getElementById('vol-tbody');
-  tbody.innerHTML='';
-  const activeEx=Object.keys(EXCHANGES).filter(id=>G.selEx.has(id));
-  const activeCoins=Object.keys(COINS).filter(c=>G.selCoin.has(c));
-  if(!activeEx.length||!activeCoins.length){
-    tbody.innerHTML=`<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--muted)">No ${!activeEx.length?'exchanges':'coins'} selected.</td></tr>`;return;
-  }
-  for(const coin of activeCoins){
-    const cfg=COINS[coin],key=coin.toLowerCase();
-    const exRows=[];
-    for(const exId of activeEx){
-      if(cfg[exId]===undefined)continue;
-      const d=G.data[exId]?.[key];if(!d)continue;
-      const agg=d[p];if(!agg)continue;
-      exRows.push({exId,d,agg,vol:agg.vol??0,usd:getUsd(d,p)});
+    // ── Chips ──────────────────────────────────────────────────────
+    function initChips() {
+      const exW = document.getElementById('ex-chips');
+      for (const [id, ex] of Object.entries(EXCHANGES)) exW.appendChild(makeChip(id, ex.label, ex.color, 'ex'));
+      const cW = document.getElementById('coin-chips');
+      for (const [coin, cfg] of Object.entries(COINS)) cW.appendChild(makeChip(coin, coin, cfg.color, 'coin'));
     }
-    if(!exRows.length){
-      if(activeEx.some(id=>cfg[id]!==undefined)){
-        const tr=document.createElement('tr');
-        tr.innerHTML=`<td colspan="7" style="text-align:center;padding:10px"><span class="sk" style="width:220px;height:12px"> </span></td>`;
-        tbody.appendChild(tr);}
-      continue;
+    function makeChip(id, label, color, type) {
+      const c = document.createElement('div');
+      c.className = 'chip on'; c.id = `chip-${type}-${id}`;
+      c.style.background = color + '22'; c.style.borderColor = color + '88';
+      c.innerHTML = `<div class="cdot2" style="background:${color}"></div>${label}` + (type === 'ex' ? `<span class="cst" id="cst-${id}"> ⏳</span>` : '');
+      c.onclick = () => toggleChip(type, id); return c;
     }
-    const totVol=exRows.reduce((a,r)=>a+r.vol,0),totUsd=exRows.reduce((a,r)=>a+r.usd,0);
-    const ps=exRows.map(r=>getPrice(r.d)).filter(p=>p>0);
-    const avgP=ps.length?ps.reduce((a,b)=>a+b,0)/ps.length:0;
-    const pFmt=coin==='RLUSD'?'$'+avgP.toFixed(4):fmtU(avgP);
-    const rsStr=agg=>!agg?'─':p==='daily'?(agg.end??'─'):`${agg.start} → ${agg.end}`;
-    const trTot=document.createElement('tr');trTot.className='group-row';
-    trTot.innerHTML=`
-      <td rowspan="${exRows.length+1}" style="border-right:1px solid var(--border)">
+    function toggleChip(type, id) {
+      const sel = type === 'ex' ? G.selEx : G.selCoin;
+      const c = document.getElementById(`chip-${type}-${id}`);
+      const color = type === 'ex' ? EXCHANGES[id]?.color : COINS[id]?.color;
+      if (!c) return;
+      if (sel.has(id)) { sel.delete(id); c.classList.remove('on'); c.style.background = ''; c.style.borderColor = ''; }
+      else { sel.add(id); c.classList.add('on'); c.style.background = color + '22'; c.style.borderColor = color + '88'; }
+      updateAllBtns(); renderTable(); buildCharts();
+    }
+    function selectAll(type) {
+      const keys = type === 'ex' ? Object.keys(EXCHANGES) : Object.keys(COINS);
+      const sel = type === 'ex' ? G.selEx : G.selCoin;
+      keys.forEach(id => { sel.add(id); const c = document.getElementById(`chip-${type}-${id}`); const color = type === 'ex' ? EXCHANGES[id]?.color : COINS[id]?.color; if (c) { c.classList.add('on'); c.style.background = color + '22'; c.style.borderColor = color + '88'; } });
+      updateAllBtns(); renderTable(); buildCharts();
+    }
+    function selectNone(type) {
+      const keys = type === 'ex' ? Object.keys(EXCHANGES) : Object.keys(COINS);
+      const sel = type === 'ex' ? G.selEx : G.selCoin;
+      keys.forEach(id => { sel.delete(id); const c = document.getElementById(`chip-${type}-${id}`); if (c) { c.classList.remove('on'); c.style.background = ''; c.style.borderColor = ''; } });
+      updateAllBtns(); renderTable(); buildCharts();
+    }
+    function updateAllBtns() {
+      document.getElementById('exAllBtn').classList.toggle('hi', Object.keys(EXCHANGES).every(id => G.selEx.has(id)));
+      document.getElementById('coinAllBtn').classList.toggle('hi', Object.keys(COINS).every(id => G.selCoin.has(id)));
+    }
+    function setChipStatus(id, ok) {
+      const el = document.getElementById(`cst-${id}`);
+      if (el) { el.textContent = ok ? ' ✓' : ' ✗'; el.style.color = ok ? 'inherit' : '#ef4444'; }
+    }
+
+    // ── Utils ───────────────────────────────────────────────────────
+    const fmt = (n, d = 0) => (+n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+    const fmtU = n => '$' + fmt(n, 2);
+    const fmtK = n => '₩' + fmt(n, 0);
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    function setStatus(msg, s = '') { document.getElementById('smsg').textContent = msg; document.getElementById('sdot').className = 'dot ' + s; }
+    function setBusy(on) { document.getElementById('refreshBtn').disabled = on; document.getElementById('spinner').style.display = on ? 'block' : 'none'; document.getElementById('btnTxt').textContent = on ? 'Fetching…' : '🔄 Refresh'; }
+
+    // ── FX ──────────────────────────────────────────────────────────
+    async function fetchFx() {
+      try { return parseFloat((await (await fetch('https://api.exchangerate-api.com/v4/latest/KRW')).json()).rates.USD); }
+      catch { return 0.000713; }
+    }
+
+    // ── UPBIT ───────────────────────────────────────────────────────
+    async function fetchUpbit(market, days = 365) {
+      const out = []; let rem = days, toDate = null;
+      while (rem > 0) {
+        const n = Math.min(200, rem);
+        let url = `https://api.upbit.com/v1/candles/days?market=${market}&count=${n}`;
+        if (toDate) url += `&to=${toDate}`;
+        try { const r = await fetch(url); if (!r.ok) break; const d = await r.json(); if (!d.length) break; out.push(...d); toDate = d[d.length - 1].candle_date_time_pst; rem -= n; await sleep(220); } catch { break; }
+      }
+      return out;
+    }
+    function aggUpbit(c, n) {
+      const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+      return {
+        vol: s.reduce((a, x) => a + parseFloat(x.candle_acc_trade_volume), 0),
+        valKrw: s.reduce((a, x) => a + parseFloat(x.candle_acc_trade_volume) * parseFloat(x.trade_price), 0),
+        start: s[s.length - 1].candle_date_time_kst?.split('T')[0], end: s[0].candle_date_time_kst?.split('T')[0]
+      };
+    }
+    function processUpbit(c) {
+      if (!c.length) return null;
+      return {
+        close: parseFloat(c[0].trade_price), isKrw: true,
+        daily: aggUpbit(c, 1), weekly: aggUpbit(c, 7), monthly: aggUpbit(c, 30), yearly: aggUpbit(c, 365)
+      };
+    }
+
+    // ── BITHUMB ─────────────────────────────────────────────────────
+    // Direct browser fetch — Bithumb sends Access-Control-Allow-Origin: *
+    async function fetchBithumb(symbol) {
+      try {
+        const r = await fetch(`https://api.bithumb.com/public/candlestick/${symbol}_KRW/24h`, { signal: AbortSignal.timeout(12000) });
+        if (!r.ok) return null;
+        const data = await r.json();
+        if (data.status !== '0000') return null;
+        let c = (data.data ?? []).slice().sort((a, b) => Number(b[0]) - Number(a[0]));
+        if (!c.length) return null;
+        const close = parseFloat(c[0][2]);
+        const agg = n => {
+          const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+          const vol = s.reduce((a, x) => a + parseFloat(x[5]), 0);
+          return { vol, valKrw: vol * close, start: new Date(Number(s[s.length - 1][0])).toISOString().split('T')[0], end: new Date(Number(s[0][0])).toISOString().split('T')[0] };
+        };
+        return { close, isKrw: true, daily: agg(1), weekly: agg(7), monthly: agg(30), yearly: agg(c.length) };
+      } catch (e) { console.warn('Bithumb', symbol, e.message); return null; }
+    }
+
+    // ── COINONE (via server proxy) ──────────────────────────────────
+    // Coinone blocks all browser CORS requests. This calls our Flask
+    // /proxy/coinone/<symbol> endpoint which fetches server-side and
+    // adds Access-Control-Allow-Origin: * before returning.
+    async function fetchCoinone(symbol) {
+      try {
+        const r = await fetch(`${PROXY_BASE}/proxy/coinone/${symbol}`, { signal: AbortSignal.timeout(20000) });
+        if (!r.ok) { console.warn(`Coinone proxy ${symbol} HTTP ${r.status}`); return null; }
+        const data = await r.json();
+        const arr = data.chart ?? (Array.isArray(data) ? data : []);
+        if (!arr.length) { console.warn(`Coinone ${symbol}: empty chart`); return null; }
+        let c = arr.filter(x => x.timestamp && x.close)
+          .sort((a, b) => Number(b.timestamp) - Number(a.timestamp))
+          .slice(0, 365);
+        if (!c.length) return null;
+        const close = parseFloat(c[0].close);
+        const agg = n => {
+          const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+          const vol = s.reduce((a, x) => a + parseFloat(x.target_volume || 0), 0);
+          const valKrw = s.reduce((a, x) => { const qv = parseFloat(x.quote_volume || 0); return a + (qv > 0 ? qv : parseFloat(x.target_volume || 0) * parseFloat(x.close || 0)); }, 0);
+          const tsD = ts => new Date(Number(ts)).toISOString().split('T')[0];
+          return { vol, valKrw, start: tsD(s[s.length - 1].timestamp), end: tsD(s[0].timestamp) };
+        };
+        return { close, isKrw: true, daily: agg(1), weekly: agg(7), monthly: agg(30), yearly: agg(c.length) };
+      } catch (e) { console.warn('Coinone proxy', symbol, e.message); return null; }
+    }
+
+    // ── KRAKEN ──────────────────────────────────────────────────────
+    async function fetchKraken(pair) {
+      try {
+        const r = await fetch(`https://api.kraken.com/0/public/OHLC?pair=${pair}&interval=1440`, { signal: AbortSignal.timeout(10000) });
+        if (!r.ok) return null; const data = await r.json(); if (data.error?.length) return null;
+        const key = Object.keys(data.result).find(k => k !== 'last');
+        let c = (data.result[key] ?? []).slice().sort((a, b) => b[0] - a[0]);
+        const close = parseFloat(c[0]?.[4] ?? 0);
+        const agg = n => {
+          const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+          const vol = s.reduce((a, x) => a + parseFloat(x[6]), 0);
+          return { vol, valUsd: vol * close, start: new Date(s[s.length - 1][0] * 1000).toISOString().split('T')[0], end: new Date(s[0][0] * 1000).toISOString().split('T')[0] };
+        };
+        return { close, isKrw: false, daily: agg(1), weekly: agg(7), monthly: agg(30), yearly: agg(365) };
+      } catch { return null; }
+    }
+
+    // ── BINANCE.US ──────────────────────────────────────────────────
+    async function fetchBinanceUS(symbol) {
+      try {
+        const r = await fetch(`https://api.binance.us/api/v3/klines?symbol=${symbol}&interval=1d&limit=365`, { signal: AbortSignal.timeout(10000) });
+        if (!r.ok) return null; let c = await r.json(); c.sort((a, b) => b[0] - a[0]);
+        const close = parseFloat(c[0]?.[4] ?? 0);
+        const agg = n => {
+          const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+          return {
+            vol: s.reduce((a, x) => a + parseFloat(x[5]), 0), valUsd: s.reduce((a, x) => a + parseFloat(x[7]), 0),
+            start: new Date(s[s.length - 1][0]).toISOString().split('T')[0], end: new Date(s[0][0]).toISOString().split('T')[0]
+          };
+        };
+        return { close, isKrw: false, daily: agg(1), weekly: agg(7), monthly: agg(30), yearly: agg(365) };
+      } catch { return null; }
+    }
+
+    // ── COINBASE ────────────────────────────────────────────────────
+    async function fetchCoinbase(productId) {
+      try {
+        const end = new Date(), start = new Date(end - 365 * 86400 * 1000);
+        const r = await fetch(`https://api.exchange.coinbase.com/products/${productId}/candles?granularity=86400&start=${start.toISOString()}&end=${end.toISOString()}`, { signal: AbortSignal.timeout(12000) });
+        if (!r.ok) return null; let c = await r.json(); c.sort((a, b) => b[0] - a[0]);
+        const close = parseFloat(c[0]?.[4] ?? 0);
+        const agg = n => {
+          const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+          const vol = s.reduce((a, x) => a + parseFloat(x[5]), 0);
+          return { vol, valUsd: vol * close, start: new Date(s[s.length - 1][0] * 1000).toISOString().split('T')[0], end: new Date(s[0][0] * 1000).toISOString().split('T')[0] };
+        };
+        return { close, isKrw: false, daily: agg(1), weekly: agg(7), monthly: agg(30), yearly: agg(365) };
+      } catch { return null; }
+    }
+
+    // ── BITSTAMP ────────────────────────────────────────────────────
+    async function fetchBitstamp(pair) {
+      try {
+        const r = await fetch(`https://www.bitstamp.net/api/v2/ohlc/${pair}/?step=86400&limit=365`, { signal: AbortSignal.timeout(10000) });
+        if (!r.ok) return null; const data = await r.json();
+        let c = (data.data?.ohlc ?? []).slice().sort((a, b) => b.timestamp - a.timestamp);
+        const close = parseFloat(c[0]?.close ?? 0);
+        const agg = n => {
+          const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+          const vol = s.reduce((a, x) => a + parseFloat(x.volume), 0);
+          return { vol, valUsd: vol * close, start: new Date(s[s.length - 1].timestamp * 1000).toISOString().split('T')[0], end: new Date(s[0].timestamp * 1000).toISOString().split('T')[0] };
+        };
+        return { close, isKrw: false, daily: agg(1), weekly: agg(7), monthly: agg(30), yearly: agg(365) };
+      } catch { return null; }
+    }
+
+    // ── OKX ─────────────────────────────────────────────────────────
+    async function fetchOKX(instId) {
+      try {
+        const r = await fetch(`https://www.okx.com/api/v5/market/history-candles?instId=${instId}&bar=1D&limit=300`, { signal: AbortSignal.timeout(10000) });
+        if (!r.ok) return null; const data = await r.json();
+        const c = data.data ?? []; const close = parseFloat(c[0]?.[4] ?? 0);
+        const agg = n => {
+          const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+          const vol = s.reduce((a, x) => a + parseFloat(x[5]), 0);
+          const valUsd = s.reduce((a, x) => a + parseFloat(x[7] || 0), 0) || vol * close;
+          return { vol, valUsd, start: new Date(+s[s.length - 1][0]).toISOString().split('T')[0], end: new Date(+s[0][0]).toISOString().split('T')[0] };
+        };
+        return { close, isKrw: false, daily: agg(1), weekly: agg(7), monthly: agg(30), yearly: agg(c.length) };
+      } catch { return null; }
+    }
+
+    // ── GEMINI ──────────────────────────────────────────────────────
+    async function fetchGemini(symbol) {
+      try {
+        const r = await fetch(`https://api.gemini.com/v2/candles/${symbol}/1day`, { signal: AbortSignal.timeout(10000) });
+        if (!r.ok) return null; let c = await r.json(); c.sort((a, b) => b[0] - a[0]);
+        const close = parseFloat(c[0]?.[4] ?? 0);
+        const agg = n => {
+          const s = c.slice(0, Math.min(n, c.length)); if (!s.length) return null;
+          const vol = s.reduce((a, x) => a + parseFloat(x[5]), 0);
+          return { vol, valUsd: vol * close, start: new Date(s[s.length - 1][0]).toISOString().split('T')[0], end: new Date(s[0][0]).toISOString().split('T')[0] };
+        };
+        return { close, isKrw: false, daily: agg(1), weekly: agg(7), monthly: agg(30), yearly: agg(c.length) };
+      } catch { return null; }
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────
+    function getUsd(obj, period) { const agg = obj?.[period]; if (!agg) return 0; return obj.isKrw ? (agg.valKrw ?? 0) * G.krwUsd : (agg.valUsd ?? 0); }
+    function getPrice(obj) { if (!obj?.close) return 0; return obj.isKrw ? obj.close * G.krwUsd : obj.close; }
+
+    // ── Pills ────────────────────────────────────────────────────────
+    function renderPills() {
+      for (const [coin] of Object.entries(COINS)) {
+        const key = coin.toLowerCase(); let price = 0;
+        for (const exId of Object.keys(EXCHANGES)) { const d = G.data[exId]?.[key]; if (d) { price = getPrice(d); if (price) break; } }
+        if (!price) continue;
+        const el = document.querySelector(`#pill-${key} .pv`);
+        if (el) el.textContent = coin === 'RLUSD' ? '$' + price.toFixed(4) : '$' + fmt(price, 2);
+      }
+      document.getElementById('krw-rate').textContent = G.krwUsd.toFixed(6);
+    }
+
+    // ── Table ────────────────────────────────────────────────────────
+    function renderTable() {
+      const p = G.period, tbody = document.getElementById('vol-tbody');
+      tbody.innerHTML = '';
+      const activeEx = Object.keys(EXCHANGES).filter(id => G.selEx.has(id));
+      const activeCoins = Object.keys(COINS).filter(c => G.selCoin.has(c));
+      if (!activeEx.length || !activeCoins.length) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:36px;color:var(--muted)">No ${!activeEx.length ? 'exchanges' : 'coins'} selected.</td></tr>`; return;
+      }
+      for (const coin of activeCoins) {
+        const cfg = COINS[coin], key = coin.toLowerCase();
+        const exRows = [];
+        for (const exId of activeEx) {
+          if (cfg[exId] === undefined) continue;
+          const d = G.data[exId]?.[key]; if (!d) continue;
+          const agg = d[p]; if (!agg) continue;
+          exRows.push({ exId, d, agg, vol: agg.vol ?? 0, usd: getUsd(d, p) });
+        }
+        if (!exRows.length) {
+          if (activeEx.some(id => cfg[id] !== undefined)) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="7" style="text-align:center;padding:10px"><span class="sk" style="width:220px;height:12px"> </span></td>`;
+            tbody.appendChild(tr);
+          }
+          continue;
+        }
+        const totVol = exRows.reduce((a, r) => a + r.vol, 0), totUsd = exRows.reduce((a, r) => a + r.usd, 0);
+        const ps = exRows.map(r => getPrice(r.d)).filter(p => p > 0);
+        const avgP = ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0;
+        const pFmt = coin === 'RLUSD' ? '$' + avgP.toFixed(4) : fmtU(avgP);
+        const rsStr = agg => !agg ? '─' : p === 'daily' ? (agg.end ?? '─') : `${agg.start} → ${agg.end}`;
+        const trTot = document.createElement('tr'); trTot.className = 'group-row';
+        trTot.innerHTML = `
+      <td rowspan="${exRows.length + 1}" style="border-right:1px solid var(--border)">
         <div class="coin-lbl"><div class="cdot" style="background:${cfg.color}"></div><span style="color:${cfg.color}">${coin}</span></div>
       </td>
       <td><span class="ex-tag tot">TOTAL (${exRows.length})</span></td>
-      <td class="vc">${fmt(totVol,cfg.dec)} <span style="color:var(--muted);font-size:10px">${coin}</span></td>
-      <td class="vkrw">${fmtK(totUsd/G.krwUsd)}</td><td class="vusd">${fmtU(totUsd)}</td>
+      <td class="vc">${fmt(totVol, cfg.dec)} <span style="color:var(--muted);font-size:10px">${coin}</span></td>
+      <td class="vkrw">${fmtK(totUsd / G.krwUsd)}</td><td class="vusd">${fmtU(totUsd)}</td>
       <td class="vc">${pFmt}</td><td class="vrange">${rsStr(exRows[0]?.agg)}</td>`;
-    tbody.appendChild(trTot);
-    for(const {exId,d,agg,vol,usd} of exRows){
-      const ex=EXCHANGES[exId];const pEx=getPrice(d);
-      const note=(coin==='RLUSD'&&exId==='coinone')?'<span class="note-sm">(KR debut)</span>':'';
-      const tr=document.createElement('tr');tr.className='sub-row';
-      tr.innerHTML=`
+        tbody.appendChild(trTot);
+        for (const { exId, d, agg, vol, usd } of exRows) {
+          const ex = EXCHANGES[exId]; const pEx = getPrice(d);
+          const note = (coin === 'RLUSD' && exId === 'coinone') ? '<span class="note-sm">(KR debut)</span>' : '';
+          const tr = document.createElement('tr'); tr.className = 'sub-row';
+          tr.innerHTML = `
         <td><span class="ex-tag ${ex.tag}">${ex.label}</span>${note}</td>
-        <td class="vc">${fmt(vol,cfg.dec)} <span style="color:var(--muted);font-size:10px">${coin}</span></td>
-        <td class="vkrw">${fmtK(usd/G.krwUsd)}</td><td class="vusd">${fmtU(usd)}</td>
-        <td class="vc">${coin==='RLUSD'?'$'+pEx.toFixed(4):fmtU(pEx)}</td>
+        <td class="vc">${fmt(vol, cfg.dec)} <span style="color:var(--muted);font-size:10px">${coin}</span></td>
+        <td class="vkrw">${fmtK(usd / G.krwUsd)}</td><td class="vusd">${fmtU(usd)}</td>
+        <td class="vc">${coin === 'RLUSD' ? '$' + pEx.toFixed(4) : fmtU(pEx)}</td>
         <td class="vrange">${rsStr(agg)}</td>`;
-      tbody.appendChild(tr);
+          tbody.appendChild(tr);
+        }
+        const sep = document.createElement('tr'); sep.className = 'sep-row'; sep.innerHTML = '<td colspan="7"></td>'; tbody.appendChild(sep);
+      }
     }
-    const sep=document.createElement('tr');sep.className='sep-row';sep.innerHTML='<td colspan="7"></td>';tbody.appendChild(sep);
-  }
-}
 
-// ── Charts ───────────────────────────────────────────────────────
-const monoFont={family:'Space Mono',size:10},gridCol='#1e2d44',tickCol='#64748b';
-const axis={ticks:{color:tickCol,font:monoFont},grid:{color:gridCol}};
-const yFmt=v=>v>=1e9?'$'+(v/1e9).toFixed(1)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+fmt(v,0);
-function destroyCharts(){Object.values(charts).forEach(c=>c?.destroy());charts={};}
-function buildCharts(){
-  destroyCharts();
-  const p=G.period,activeEx=Object.keys(EXCHANGES).filter(id=>G.selEx.has(id)),activeCoins=Object.keys(COINS).filter(c=>G.selCoin.has(c));
-  const pLabel={daily:'Daily',weekly:'7-Day',monthly:'30-Day',yearly:'365-Day'}[p];
-  document.getElementById('bar-lbl').textContent=`${pLabel} Volume USD`;
-  const totUsd=activeCoins.map(coin=>activeEx.reduce((s,id)=>s+getUsd(G.data[id]?.[coin.toLowerCase()],p),0));
-  const coinCols=activeCoins.map(c=>COINS[c].color);
-  charts.bar=new Chart(document.getElementById('barChart'),{type:'bar',
-    data:{labels:activeCoins,datasets:[{data:totUsd,backgroundColor:coinCols.map(c=>c+'33'),borderColor:coinCols,borderWidth:2,borderRadius:7}]},
-    options:{plugins:{legend:{display:false}},scales:{x:axis,y:{...axis,ticks:{...axis.ticks,callback:yFmt}}}}});
-  const nz=activeCoins.map((k,i)=>({k,v:totUsd[i],c:coinCols[i]})).filter(x=>x.v>0);
-  charts.donut=new Chart(document.getElementById('donutChart'),{type:'doughnut',
-    data:{labels:nz.map(x=>x.k),datasets:[{data:nz.map(x=>x.v),backgroundColor:nz.map(x=>x.c+'bb'),borderColor:nz.map(x=>x.c),borderWidth:2,hoverOffset:8}]},
-    options:{plugins:{legend:{labels:{color:tickCol,font:monoFont}}},cutout:'65%'}});
-  const cmpCoin=activeCoins.includes('XRP')?'XRP':(activeCoins[0]||'XRP'),cmpKey=cmpCoin.toLowerCase();
-  document.getElementById('cmp-lbl').textContent=`Exchange Breakdown — ${cmpCoin} USD`;
-  charts.cmp=new Chart(document.getElementById('cmpChart'),{type:'bar',
-    data:{labels:activeEx.map(id=>EXCHANGES[id].label),datasets:[{label:`${cmpCoin} USD`,
-      data:activeEx.map(id=>getUsd(G.data[id]?.[cmpKey],p)),
-      backgroundColor:activeEx.map(id=>EXCHANGES[id].color+'33'),borderColor:activeEx.map(id=>EXCHANGES[id].color),borderWidth:2,borderRadius:6}]},
-    options:{plugins:{legend:{labels:{color:tickCol,font:monoFont}}},scales:{x:axis,y:{...axis,ticks:{...axis.ticks,callback:yFmt}}}}});
-  const priceCoins=activeCoins.filter(c=>c!=='BTC');
-  charts.price=new Chart(document.getElementById('priceChart'),{type:'bar',
-    data:{labels:priceCoins,datasets:[{
-      data:priceCoins.map(coin=>{const key=coin.toLowerCase();const ps=activeEx.map(id=>getPrice(G.data[id]?.[key])).filter(p=>p>0);return ps.length?ps.reduce((a,b)=>a+b,0)/ps.length:0;}),
-      backgroundColor:priceCoins.map(c=>COINS[c].color+'33'),borderColor:priceCoins.map(c=>COINS[c].color),borderWidth:2,borderRadius:7}]},
-    options:{plugins:{legend:{display:false}},scales:{x:axis,y:{...axis,ticks:{...axis.ticks,callback:v=>'$'+v}}}}});
-}
+    // ── Charts ───────────────────────────────────────────────────────
+    const monoFont = { family: 'Space Mono', size: 10 }, gridCol = '#1e2d44', tickCol = '#64748b';
+    const axis = { ticks: { color: tickCol, font: monoFont }, grid: { color: gridCol } };
+    const yFmt = v => v >= 1e9 ? '$' + (v / 1e9).toFixed(1) + 'B' : v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : '$' + fmt(v, 0);
+    function destroyCharts() { Object.values(charts).forEach(c => c?.destroy()); charts = {}; }
+    function buildCharts() {
+      destroyCharts();
+      const p = G.period, activeEx = Object.keys(EXCHANGES).filter(id => G.selEx.has(id)), activeCoins = Object.keys(COINS).filter(c => G.selCoin.has(c));
+      const pLabel = { daily: 'Daily', weekly: '7-Day', monthly: '30-Day', yearly: '365-Day' }[p];
+      document.getElementById('bar-lbl').textContent = `${pLabel} Volume USD`;
+      const totUsd = activeCoins.map(coin => activeEx.reduce((s, id) => s + getUsd(G.data[id]?.[coin.toLowerCase()], p), 0));
+      const coinCols = activeCoins.map(c => COINS[c].color);
+      charts.bar = new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: { labels: activeCoins, datasets: [{ data: totUsd, backgroundColor: coinCols.map(c => c + '33'), borderColor: coinCols, borderWidth: 2, borderRadius: 7 }] },
+        options: { plugins: { legend: { display: false } }, scales: { x: axis, y: { ...axis, ticks: { ...axis.ticks, callback: yFmt } } } }
+      });
+      const nz = activeCoins.map((k, i) => ({ k, v: totUsd[i], c: coinCols[i] })).filter(x => x.v > 0);
+      charts.donut = new Chart(document.getElementById('donutChart'), {
+        type: 'doughnut',
+        data: { labels: nz.map(x => x.k), datasets: [{ data: nz.map(x => x.v), backgroundColor: nz.map(x => x.c + 'bb'), borderColor: nz.map(x => x.c), borderWidth: 2, hoverOffset: 8 }] },
+        options: { plugins: { legend: { labels: { color: tickCol, font: monoFont } } }, cutout: '65%' }
+      });
+      const cmpCoin = activeCoins.includes('XRP') ? 'XRP' : (activeCoins[0] || 'XRP'), cmpKey = cmpCoin.toLowerCase();
+      document.getElementById('cmp-lbl').textContent = `Exchange Breakdown — ${cmpCoin} USD`;
+      charts.cmp = new Chart(document.getElementById('cmpChart'), {
+        type: 'bar',
+        data: {
+          labels: activeEx.map(id => EXCHANGES[id].label), datasets: [{
+            label: `${cmpCoin} USD`,
+            data: activeEx.map(id => getUsd(G.data[id]?.[cmpKey], p)),
+            backgroundColor: activeEx.map(id => EXCHANGES[id].color + '33'), borderColor: activeEx.map(id => EXCHANGES[id].color), borderWidth: 2, borderRadius: 6
+          }]
+        },
+        options: { plugins: { legend: { labels: { color: tickCol, font: monoFont } } }, scales: { x: axis, y: { ...axis, ticks: { ...axis.ticks, callback: yFmt } } } }
+      });
+      const priceCoins = activeCoins.filter(c => c !== 'BTC');
+      charts.price = new Chart(document.getElementById('priceChart'), {
+        type: 'bar',
+        data: {
+          labels: priceCoins, datasets: [{
+            data: priceCoins.map(coin => { const key = coin.toLowerCase(); const ps = activeEx.map(id => getPrice(G.data[id]?.[key])).filter(p => p > 0); return ps.length ? ps.reduce((a, b) => a + b, 0) / ps.length : 0; }),
+            backgroundColor: priceCoins.map(c => COINS[c].color + '33'), borderColor: priceCoins.map(c => COINS[c].color), borderWidth: 2, borderRadius: 7
+          }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { x: axis, y: { ...axis, ticks: { ...axis.ticks, callback: v => '$' + v } } } }
+      });
+    }
 
-// ── Tab ──────────────────────────────────────────────────────────
-function setTab(btn){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');G.period=btn.dataset.p;renderTable();buildCharts();}
+    // ── Tab ──────────────────────────────────────────────────────────
+    function setTab(btn) { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); btn.classList.add('active'); G.period = btn.dataset.p; renderTable(); buildCharts(); }
 
-// ── Load ─────────────────────────────────────────────────────────
-async function loadAll(){
-  setBusy(true);G.data={};Object.keys(EXCHANGES).forEach(id=>{G.data[id]={};});
-  Object.keys(EXCHANGES).forEach(id=>{const el=document.getElementById(`cst-${id}`);if(el){el.textContent=' ⏳';el.style.color='';}});
-  setStatus('Fetching KRW/USD rate…','loading');
-  G.krwUsd=await fetchFx();
-  document.getElementById('krw-rate').textContent=G.krwUsd.toFixed(6);
-  const coinEntries=Object.entries(COINS);
-  let done=0;
-  const total=coinEntries.reduce((s,[,c])=>s+Object.keys(EXCHANGES).filter(id=>c[id]!==undefined).length,0);
-  for(const [coin,cfg] of coinEntries){
-    const key=coin.toLowerCase();
-    const mk=(exId,fn)=>fn().then(d=>{
-      G.data[exId][key]=d;done++;
-      setStatus(`[${done}/${total}]  ${EXCHANGES[exId].label} → ${coin} ${d?'✓':'✗'}`,'loading');
-      renderPills();renderTable();
-    }).catch(e=>{G.data[exId][key]=null;console.warn(exId,coin,e);});
-    const fns=[];
-    if(cfg.upbit)     fns.push(mk('upbit',    ()=>fetchUpbit(cfg.upbit,365).then(processUpbit)));
-    if(cfg.bithumb)   fns.push(mk('bithumb',  ()=>fetchBithumb(cfg.bithumb)));
-    if(cfg.coinone)   fns.push(mk('coinone',  ()=>fetchCoinone(cfg.coinone)));
-    if(cfg.kraken)    fns.push(mk('kraken',   ()=>fetchKraken(cfg.kraken)));
-    if(cfg.binanceus) fns.push(mk('binanceus',()=>fetchBinanceUS(cfg.binanceus)));
-    if(cfg.coinbase)  fns.push(mk('coinbase', ()=>fetchCoinbase(cfg.coinbase)));
-    if(cfg.bitstamp)  fns.push(mk('bitstamp', ()=>fetchBitstamp(cfg.bitstamp)));
-    if(cfg.okx)       fns.push(mk('okx',      ()=>fetchOKX(cfg.okx)));
-    if(cfg.gemini)    fns.push(mk('gemini',   ()=>fetchGemini(cfg.gemini)));
-    await Promise.allSettled(fns);await sleep(80);
-  }
-  for(const exId of Object.keys(EXCHANGES)){
-    setChipStatus(exId,Object.keys(COINS).some(coin=>G.data[exId]?.[coin.toLowerCase()]));
-  }
-  setStatus('Rendering charts…','loading');buildCharts();
-  const t=new Date().toLocaleTimeString('en-US',{hour12:false,timeZone:'UTC'});
-  document.getElementById('last-upd').textContent=`Updated ${t} UTC`;
-  const n=Object.keys(EXCHANGES).filter(id=>Object.values(G.data[id]||{}).some(Boolean)).length;
-  setStatus(`Live — ${n}/${Object.keys(EXCHANGES).length} exchanges loaded`,'live');
-  setBusy(false);
-}
+    // ── Load ─────────────────────────────────────────────────────────
+    async function loadAll() {
+      setBusy(true); G.data = {}; Object.keys(EXCHANGES).forEach(id => { G.data[id] = {}; });
+      Object.keys(EXCHANGES).forEach(id => { const el = document.getElementById(`cst-${id}`); if (el) { el.textContent = ' ⏳'; el.style.color = ''; } });
+      setStatus('Fetching KRW/USD rate…', 'loading');
+      G.krwUsd = await fetchFx();
+      document.getElementById('krw-rate').textContent = G.krwUsd.toFixed(6);
+      const coinEntries = Object.entries(COINS);
+      let done = 0;
+      const total = coinEntries.reduce((s, [, c]) => s + Object.keys(EXCHANGES).filter(id => c[id] !== undefined).length, 0);
+      for (const [coin, cfg] of coinEntries) {
+        const key = coin.toLowerCase();
+        const mk = (exId, fn) => fn().then(d => {
+          G.data[exId][key] = d; done++;
+          setStatus(`[${done}/${total}]  ${EXCHANGES[exId].label} → ${coin} ${d ? '✓' : '✗'}`, 'loading');
+          renderPills(); renderTable();
+        }).catch(e => { G.data[exId][key] = null; console.warn(exId, coin, e); });
+        const fns = [];
+        if (cfg.upbit) fns.push(mk('upbit', () => fetchUpbit(cfg.upbit, 365).then(processUpbit)));
+        if (cfg.bithumb) fns.push(mk('bithumb', () => fetchBithumb(cfg.bithumb)));
+        if (cfg.coinone) fns.push(mk('coinone', () => fetchCoinone(cfg.coinone)));
+        if (cfg.kraken) fns.push(mk('kraken', () => fetchKraken(cfg.kraken)));
+        if (cfg.binanceus) fns.push(mk('binanceus', () => fetchBinanceUS(cfg.binanceus)));
+        if (cfg.coinbase) fns.push(mk('coinbase', () => fetchCoinbase(cfg.coinbase)));
+        if (cfg.bitstamp) fns.push(mk('bitstamp', () => fetchBitstamp(cfg.bitstamp)));
+        if (cfg.okx) fns.push(mk('okx', () => fetchOKX(cfg.okx)));
+        if (cfg.gemini) fns.push(mk('gemini', () => fetchGemini(cfg.gemini)));
+        await Promise.allSettled(fns); await sleep(80);
+      }
+      for (const exId of Object.keys(EXCHANGES)) {
+        setChipStatus(exId, Object.keys(COINS).some(coin => G.data[exId]?.[coin.toLowerCase()]));
+      }
+      setStatus('Rendering charts…', 'loading'); buildCharts();
+      const t = new Date().toLocaleTimeString('en-US', { hour12: false, timeZone: 'PST' });
+      document.getElementById('last-upd').textContent = `Updated ${t} PST`;
+      const n = Object.keys(EXCHANGES).filter(id => Object.values(G.data[id] || {}).some(Boolean)).length;
+      setStatus(`Live — ${n}/${Object.keys(EXCHANGES).length} exchanges loaded`, 'live');
+      setBusy(false);
+    }
 
-initChips();loadAll();
-</script>
+    initChips(); loadAll();
+  </script>
 </body>
+
 </html>
