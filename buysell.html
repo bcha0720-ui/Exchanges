@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚡ XRP Buy/Sell Pressure</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#080c14;--surface:#0d1420;--card:#111926;--border:#1e2d44;
+  --accent:#00d4ff;--purple:#7c3aed;--amber:#f59e0b;--green:#10b981;
+  --text:#e2e8f0;--muted:#64748b;--dim:#94a3b8;--up:#22c55e;
+  --mono:'Space Mono',monospace;--ui:'Syne',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--ui);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);
+  background-size:44px 44px;pointer-events:none;z-index:0;}
+
+/* ── Header — identical structure to index.html ── */
+header{position:relative;z-index:2;padding:22px 28px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  background:linear-gradient(180deg,rgba(0,212,255,.05) 0%,transparent 100%);}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--purple));
+  border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 0 18px rgba(0,212,255,.25);}
+.logo h1{font-size:18px;font-weight:800;letter-spacing:-.3px;
+  background:linear-gradient(90deg,var(--accent),#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.logo p{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px;}
+.hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+#last-upd{font-family:var(--mono);font-size:10px;color:var(--muted);
+  background:var(--surface);border:1px solid var(--border);padding:5px 10px;border-radius:5px;}
+.btn{background:linear-gradient(135deg,var(--accent),#0ea5e9);color:#000;
+  font-family:var(--ui);font-weight:700;font-size:12px;border:none;border-radius:7px;
+  padding:7px 16px;cursor:pointer;display:flex;align-items:center;gap:6px;
+  transition:opacity .2s,transform .1s;box-shadow:0 0 14px rgba(0,212,255,.2);}
+.btn:hover{opacity:.9;transform:translateY(-1px);}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+.spinner{width:12px;height:12px;border:2px solid rgba(0,0,0,.25);border-top-color:#000;
+  border-radius:50%;animation:spin .7s linear infinite;display:none;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── Tab nav — same style as index.html's .tabs ── */
+.tab-nav{position:relative;z-index:2;display:flex;gap:0;padding:0 28px;
+  border-bottom:1px solid var(--border);background:var(--surface);}
+.tab-link{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;padding:12px 20px;text-decoration:none;
+  color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all .18s;display:inline-block;}
+.tab-link:hover{color:var(--text);}
+.tab-link.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* ── Status bar ── */
+#status{position:relative;z-index:1;padding:8px 28px;font-family:var(--mono);font-size:11px;
+  background:rgba(0,212,255,.03);border-bottom:1px solid var(--border);
+  color:var(--muted);min-height:32px;display:flex;align-items:center;gap:7px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.dot.live{background:var(--up);box-shadow:0 0 7px var(--up);animation:pulse 2s infinite;}
+.dot.loading{background:var(--accent);box-shadow:0 0 7px var(--accent);animation:pulse .7s infinite;}
+.dot.err{background:#ef4444;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+
+/* ── Main layout ── */
+main{position:relative;z-index:1;padding:24px 28px;max-width:1400px;margin:0 auto;}
+
+/* ── Section label — matches index.html .sec ── */
+.sec{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;
+  color:var(--muted);margin:0 0 14px;display:flex;align-items:center;gap:10px;}
+.sec::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── Kimchi pill ── */
+.kimchi-row{display:flex;align-items:center;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+.kpill{background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:10px 18px;display:flex;align-items:center;gap:10px;}
+.kpill .kl{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;}
+.kpill .kv{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--text);}
+
+/* ── Exchange table ── */
+.tbl-wrap{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  overflow:hidden;margin-bottom:28px;}
+.bs-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;min-width:600px;}
+.bs-table thead tr{background:var(--surface);}
+.bs-table th{padding:11px 16px;text-align:left;font-size:9px;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;}
+.bs-table th:not(:first-child){text-align:right;}
+.bs-table td{padding:12px 16px;border-bottom:1px solid rgba(30,45,68,.5);
+  white-space:nowrap;vertical-align:middle;}
+.bs-table td:not(:first-child){text-align:right;}
+.bs-table tr:last-child td{border-bottom:none;}
+.bs-table tr:hover td{background:rgba(0,212,255,.03);}
+.exch-cell{color:#c8dcea;font-size:0.9rem;font-weight:600;}
+.price-cell{color:#fff;font-weight:700;font-size:0.95rem;}
+.buy-cell{color:#00e676;}
+.sell-cell{color:#ff5252;}
+.offline{color:#556677;}
+.press-wrap{display:flex;flex-direction:column;gap:3px;align-items:flex-end;}
+.press-label{font-weight:700;font-size:0.82rem;}
+.press-bar{display:flex;height:4px;border-radius:2px;overflow:hidden;width:90px;}
+
+/* ── Chart card ── */
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:20px;margin-bottom:28px;}
+.chart-title{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:16px;}
+#price-chart{width:100%!important;height:320px!important;}
+
+/* ── Footer ── */
+footer{position:relative;z-index:1;text-align:center;padding:18px 28px;
+  font-family:var(--mono);font-size:10px;color:var(--muted);
+  border-top:1px solid var(--border);margin-top:28px;}
+footer a{color:var(--accent);text-decoration:none;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <h1>XRP Buy / Sell Pressure</h1>
+      <p>KRAKEN · BINANCE.US · COINBASE · UPBIT · BITSTAMP · OKX · GEMINI</p>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div id="last-upd">─── not fetched yet ───</div>
+    <button class="btn" id="refreshBtn" onclick="fetchData()">
+      <span class="spinner" id="spinner"></span>
+      <span id="btnTxt">🔄 Refresh</span>
+    </button>
+  </div>
+</header>
+
+<!-- Tab nav: links to the two pages -->
+<nav class="tab-nav">
+  <a class="tab-link" href="/">📊&nbsp; Volume Tracker</a>
+  <a class="tab-link active" href="/buysell">⚡&nbsp; Buy / Sell Pressure</a>
+</nav>
+
+<div id="status"><div class="dot" id="sdot"></div><span id="smsg">Initializing…</span></div>
+
+<main>
+
+  <!-- Kimchi + KRW pills -->
+  <div class="kimchi-row">
+    <div class="kpill">
+      <div><div class="kl">Kimchi Premium</div><div class="kv" id="kimchi-val">─</div></div>
+    </div>
+    <div class="kpill">
+      <div><div class="kl">USD / KRW</div><div class="kv" id="krw-val">─</div></div>
+    </div>
+    <div class="kpill">
+      <div><div class="kl">Last Updated</div><div class="kv" id="ts-val">─</div></div>
+    </div>
+  </div>
+
+  <div class="sec">📡 &nbsp; Live Exchange Data</div>
+  <div class="tbl-wrap">
+    <table class="bs-table">
+      <thead><tr>
+        <th>Exchange</th>
+        <th>Price (USD)</th>
+        <th>Buy Volume</th>
+        <th>Sell Volume</th>
+        <th>Net Pressure</th>
+      </tr></thead>
+      <tbody id="bs-tbody">
+        <tr><td colspan="5" style="text-align:center;padding:36px;color:var(--muted)">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec">📈 &nbsp; Price Discovery — Real-Time Trends</div>
+  <div class="chart-card">
+    <div class="chart-title">XRP / USD — Price by Exchange (rolling 60 data points)</div>
+    <canvas id="price-chart"></canvas>
+  </div>
+
+</main>
+
+<footer>
+  Kraken · Binance.US · Coinbase · Upbit · Bitstamp · OKX · Gemini &nbsp;·&nbsp;
+  Auto-refresh every 30s &nbsp;·&nbsp;
+  Follow <a href="https://x.com/chachakobe4er" target="_blank">@chachakobe4er</a> on X
+</footer>
+
+<script>
+const BS_COLORS = {
+  Kraken:     '#00aae4',
+  'Binance.US':'#f0b90b',
+  Coinbase:   '#0052ff',
+  Upbit:      '#00e676',
+  Bitstamp:   '#00c853',
+  OKX:        '#c084fc',
+  Gemini:     '#38bdf8',
+};
+const MAX_PTS = 60;
+const history = {};  // { name: [{t, price}] }
+let priceChart = null;
+const rowBg = ['#0d1420','#111926'];
+
+// ── Helpers ──────────────────────────────────────────────────────
+function fmt(n, d=0){ return (+n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+function setStatus(msg, cls=''){
+  document.getElementById('smsg').textContent = msg;
+  document.getElementById('sdot').className = 'dot ' + cls;
+}
+function setBusy(on){
+  document.getElementById('refreshBtn').disabled = on;
+  document.getElementById('spinner').style.display = on ? 'block' : 'none';
+  document.getElementById('btnTxt').textContent = on ? 'Fetching…' : '🔄 Refresh';
+}
+
+// ── Pressure cell ─────────────────────────────────────────────────
+function pressureCell(buy, sell){
+  if(buy + sell === 0) return `<span style="color:var(--muted)">— neutral</span>`;
+  const ratio = buy / (buy + sell) * 100;
+  const bb = Math.round(ratio), bs = 100 - bb;
+  let label, color;
+  if(ratio >= 60)      { label = `▲ ${ratio.toFixed(0)}% BUY`;       color = '#00e676'; }
+  else if(ratio <= 40) { label = `▼ ${(100-ratio).toFixed(0)}% SELL`; color = '#ff5252'; }
+  else                 { label = `◆ ${ratio.toFixed(0)}% mixed`;       color = '#ffb300'; }
+  return `<div class="press-wrap">
+    <span class="press-label" style="color:${color}">${label}</span>
+    <div class="press-bar">
+      <div style="width:${bb}%;background:#00e676"></div>
+      <div style="width:${bs}%;background:#ff5252"></div>
+    </div>
+  </div>`;
+}
+
+// ── Render table ─────────────────────────────────────────────────
+function renderTable(exchanges){
+  const tbody = document.getElementById('bs-tbody');
+  tbody.innerHTML = '';
+  exchanges.forEach((ex, i) => {
+    const tr = document.createElement('tr');
+    tr.style.background = rowBg[i % 2];
+    if(ex.price === null){
+      tr.innerHTML = `<td class="exch-cell">${ex.emoji} ${ex.name}</td>
+        <td colspan="4" class="offline">— offline —</td>`;
+    } else {
+      tr.innerHTML = `
+        <td class="exch-cell">${ex.emoji} ${ex.name}</td>
+        <td class="price-cell">$${ex.price.toFixed(4)}</td>
+        <td class="buy-cell">${fmt(ex.buy, 0)}</td>
+        <td class="sell-cell">${fmt(ex.sell, 0)}</td>
+        <td>${pressureCell(ex.buy, ex.sell)}</td>`;
+    }
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Update rolling chart ──────────────────────────────────────────
+function updateChart(exchanges, timestamp){
+  exchanges.forEach(ex => {
+    if(ex.price === null) return;
+    if(!history[ex.name]) history[ex.name] = [];
+    history[ex.name].push({ t: timestamp, price: ex.price });
+    if(history[ex.name].length > MAX_PTS) history[ex.name].shift();
+  });
+
+  const datasets = Object.entries(history).map(([name, arr]) => ({
+    label: name,
+    data: arr.map(x => ({ x: x.t, y: x.price })),
+    borderColor: BS_COLORS[name] || '#fff',
+    backgroundColor: 'transparent',
+    borderWidth: 2.2,
+    pointRadius: 3.5,
+    pointBackgroundColor: BS_COLORS[name] || '#fff',
+    tension: 0.3,
+  }));
+
+  const BG = '#080c14', GRID = '#1a3a5c', TEXT = '#8fb8d8', TITLE = '#c8dcea';
+
+  if(priceChart){
+    priceChart.data.datasets = datasets;
+    priceChart.update('none');
+  } else {
+    const ctx = document.getElementById('price-chart').getContext('2d');
+    priceChart = new Chart(ctx, {
+      type: 'line',
+      data: { datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        backgroundColor: BG,
+        scales: {
+          x: {
+            type: 'category',
+            ticks: { color: TEXT, font: { family: 'Space Mono', size: 9 }, maxRotation: 0, maxTicksLimit: 10 },
+            grid: { color: GRID },
+          },
+          y: {
+            ticks: { color: TEXT, font: { family: 'Space Mono', size: 9 }, callback: v => `$${v.toFixed(4)}` },
+            grid: { color: GRID },
+          },
+        },
+        plugins: {
+          legend: { labels: { color: TEXT, font: { family: 'Space Mono', size: 9 }, boxWidth: 12 } },
+        },
+      },
+    });
+  }
+}
+
+// ── Fetch from /api/buysell ───────────────────────────────────────
+async function fetchData(){
+  setBusy(true);
+  setStatus('Fetching live data…', 'loading');
+  try {
+    const data = await (await fetch('/api/buysell')).json();
+
+    // pills
+    document.getElementById('ts-val').textContent  = data.timestamp;
+    document.getElementById('krw-val').textContent = `₩${fmt(data.krw_rate, 0)}`;
+
+    const kEl = document.getElementById('kimchi-val');
+    if(data.kimchi !== null){
+      const k = data.kimchi;
+      const col = k >= 0 ? '#00e676' : '#ff6b6b';
+      kEl.innerHTML = `<span style="color:${col}">${k >= 0 ? '↑' : '↓'} ${k > 0 ? '+' : ''}${k.toFixed(2)}%</span>`;
+    } else {
+      kEl.textContent = 'N/A';
+    }
+
+    renderTable(data.exchanges);
+    updateChart(data.exchanges, data.timestamp);
+
+    const live = data.exchanges.filter(e => e.price !== null).length;
+    setStatus(`Live — ${live}/${data.exchanges.length} exchanges · auto-refresh in 30s`, 'live');
+    document.getElementById('last-upd').textContent =
+      `Updated ${data.timestamp}`;
+  } catch(e) {
+    setStatus(`Error: ${e.message}`, 'err');
+  }
+  setBusy(false);
+}
+
+// ── Boot + auto-refresh ───────────────────────────────────────────
+fetchData();
+setInterval(fetchData, 30000);
+
+// Countdown
+let cd = 30;
+setInterval(() => {
+  const sdot = document.getElementById('sdot');
+  if(!sdot || sdot.className.includes('loading')){ cd = 30; return; }
+  cd--;
+  if(cd <= 0){ cd = 30; return; }
+  const live = Object.keys(history).length;
+  document.getElementById('smsg').textContent =
+    `Live — ${live} exchanges · refresh in ${cd}s`;
+}, 1000);
+</script>
+</body>
+</html>
