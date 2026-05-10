@@ -13,7 +13,7 @@ New routes added:
 from flask import Flask, jsonify, send_from_directory
 import requests
 import datetime
-import pytz
+from zoneinfo import ZoneInfo
 import os
 
 app = Flask(__name__, static_folder=".")
@@ -160,7 +160,7 @@ def _gemini():
 @app.route("/api/buysell")
 def api_buysell():
     krw_rate = _get_krw_rate()
-    now = datetime.datetime.now(pytz.utc).astimezone(pytz.timezone("America/Los_Angeles"))
+    now = datetime.datetime.now(ZoneInfo("America/Los_Angeles"))
 
     kraken_p,   kraken_b,   kraken_s         = _kraken()
     binance_p,  binance_b,  binance_s         = _binance_us()
