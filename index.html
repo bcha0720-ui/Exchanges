@@ -22,9 +22,9 @@ body::before{content:'';position:fixed;inset:0;
 
 /* ── Header ── */
 header{position:relative;z-index:2;padding:22px 28px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+  display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px;
   background:linear-gradient(180deg,rgba(0,212,255,.05) 0%,transparent 100%);}
-.logo{display:flex;align-items:center;gap:12px;}
+.logo{display:flex;align-items:center;gap:12px;flex-direction:row;}
 .logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--purple));
   border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;
   box-shadow:0 0 18px rgba(0,212,255,.25);}
@@ -34,7 +34,7 @@ header{position:relative;z-index:2;padding:22px 28px;border-bottom:1px solid var
 .hdr-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
 
 /* ── Tab nav ── */
-.tab-nav{position:relative;z-index:2;display:flex;padding:0 28px;
+.tab-nav{position:relative;z-index:2;display:flex;justify-content:center;padding:0 28px;
   border-bottom:1px solid var(--border);background:var(--surface);}
 .tab-btn{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.08em;
   text-transform:uppercase;padding:12px 20px;cursor:pointer;border:none;
@@ -136,6 +136,8 @@ header{position:relative;z-index:2;padding:22px 28px;border-bottom:1px solid var
 .ex-tag.bst{background:rgba(0,159,220,.1); color:#009fdc;border:1px solid rgba(0,159,220,.25);}
 .ex-tag.okx{background:rgba(220,220,220,.07);color:#e2e8f0;border:1px solid rgba(255,255,255,.15);}
 .ex-tag.gem{background:rgba(0,210,153,.1); color:#00d299;border:1px solid rgba(0,210,153,.25);}
+.ex-tag.byt{background:rgba(247,166,0,.1);   color:#f7a600;border:1px solid rgba(247,166,0,.25);}
+.ex-tag.kuc{background:rgba(0,200,160,.1);   color:#00c8a0;border:1px solid rgba(0,200,160,.25);}
 .vc{color:var(--text);}.vkrw{color:var(--dim);}.vusd{color:var(--amber);font-weight:700;}
 .vrange{color:var(--muted);font-size:10px;}
 .sub-row td:nth-child(2){padding-left:4px;}
@@ -185,7 +187,7 @@ canvas{max-height:200px;}
 footer{position:relative;z-index:1;text-align:center;padding:18px 28px;
   font-family:var(--mono);font-size:10px;color:var(--muted);
   border-top:1px solid var(--border);margin-top:28px;}
-footer a{color:var(--accent);text-decoration:none;}
+footer a{text-decoration:none;transition:all .2s;}
 
 ::-webkit-scrollbar{width:5px;height:5px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
@@ -198,7 +200,7 @@ footer a{color:var(--accent);text-decoration:none;}
 <header>
   <div class="logo">
     <div class="logo-icon">🌊</div>
-    <div>
+    <div style="text-align:center;">
       <h1>XRP Multi-Exchange Tracker</h1>
       <p>UPBIT · BITHUMB · COINONE · KRAKEN · BINANCE.US · COINBASE · BITSTAMP · OKX · GEMINI</p>
     </div>
@@ -327,8 +329,25 @@ footer a{color:var(--accent);text-decoration:none;}
 <footer>
   Upbit · Bithumb · Coinone (via proxy) · Kraken · Binance.US · Coinbase · Bitstamp · OKX · Gemini
   &nbsp;·&nbsp; KRW/USD: exchangerate-api.com &nbsp;·&nbsp;
-  RLUSD: Coinone/Bithumb (KRW) + Kraken/Bitstamp/OKX/Gemini (USD) &nbsp;·&nbsp;
-  Follow <a href="https://x.com/chachakobe4er" target="_blank">@chachakobe4er</a>
+  RLUSD: Coinone/Bithumb (KRW) + Kraken/Bitstamp/OKX/Gemini (USD)
+  <span style="display:inline-flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:8px;display:block;">
+    <a href="https://x.com/chachakobe4er" target="_blank"
+       style="display:inline-flex;align-items:center;gap:6px;color:#00d4ff;text-decoration:none;
+              border:1px solid rgba(0,212,255,.3);border-radius:6px;padding:4px 12px;
+              font-weight:700;transition:all .2s;"
+       onmouseover="this.style.background='rgba(0,212,255,.08)'"
+       onmouseout="this.style.background='transparent'">
+      𝕏 &nbsp;@chachakobe4er
+    </a>
+    <a href="https://xrp-1-0jnc.onrender.com" target="_blank"
+       style="display:inline-flex;align-items:center;gap:6px;color:#a78bfa;text-decoration:none;
+              border:1px solid rgba(167,139,250,.3);border-radius:6px;padding:4px 12px;
+              font-weight:700;transition:all .2s;"
+       onmouseover="this.style.background='rgba(167,139,250,.08)'"
+       onmouseout="this.style.background='transparent'">
+      ⬡ &nbsp;XRP Insights Dashboard
+    </a>
+  </span>
 </footer>
 
 <script>
@@ -731,9 +750,9 @@ const BS_EXCHANGES = [
   {id:'binanceus', name:'Binance.US', tag:'bnu', color:'#f0b90b'},
   {id:'coinbase',  name:'Coinbase',   tag:'cbs', color:'#0082ff'},
   {id:'upbit',     name:'Upbit',      tag:'ub',  color:'#00d4ff'},
-  {id:'bitstamp',  name:'Bitstamp',   tag:'bst', color:'#009fdc'},
+  {id:'bybit',     name:'Bybit',      tag:'byt', color:'#f7a600'},
   {id:'okx',       name:'OKX',        tag:'okx', color:'#e2e8f0'},
-  {id:'gemini',    name:'Gemini',     tag:'gem', color:'#00d299'},
+  {id:'kucoin',    name:'KuCoin',     tag:'kuc', color:'#00c8a0'},
 ];
 const BS_MAX_PTS  = 60;
 const BS_REFRESH  = 30;
@@ -786,54 +805,58 @@ async function bsCoinbase(){
   }catch{return null;}
 }
 async function bsUpbit(){
-  // Retry once on failure — Upbit occasionally rate-limits
-  async function _try(){
-    const t=await(await fetch('https://api.upbit.com/v1/ticker?markets=KRW-XRP',{signal:AbortSignal.timeout(10000)})).json();
+  // Upbit has open CORS — use cors mode explicitly
+  try{
+    const t=await(await fetch('https://api.upbit.com/v1/ticker?markets=KRW-XRP',{mode:'cors',signal:AbortSignal.timeout(10000)})).json();
+    if(!Array.isArray(t)||!t[0])return null;
     const price=parseFloat(t[0].trade_price)*bsKrwUsd;
-    if(!price||isNaN(price))throw new Error('bad price');
-    const tr=await(await fetch('https://api.upbit.com/v1/trades/ticks?market=KRW-XRP&count=100',{signal:AbortSignal.timeout(10000)})).json();
+    if(!price||isNaN(price))return null;
+    const tr=await(await fetch('https://api.upbit.com/v1/trades/ticks?market=KRW-XRP&count=100',{mode:'cors',signal:AbortSignal.timeout(10000)})).json();
     if(!Array.isArray(tr))return{price,buy:0,sell:0};
     return{price,
       buy: tr.filter(x=>x.ask_bid==='BID').reduce((s,x)=>s+parseFloat(x.trade_volume||0),0),
       sell:tr.filter(x=>x.ask_bid==='ASK').reduce((s,x)=>s+parseFloat(x.trade_volume||0),0)};
-  }
-  try{return await _try();}
-  catch{
-    await new Promise(r=>setTimeout(r,1500));
-    try{return await _try();}catch{return null;}
-  }
+  }catch{return null;}
 }
-async function bsBitstamp(){
+async function bsBybit(){
+  // Bybit has fully open CORS — confirmed working from all browser origins
   try{
-    const t=await(await fetch('https://www.bitstamp.net/api/v2/ticker/xrpusd/',{signal:AbortSignal.timeout(7000)})).json();
-    const price=parseFloat(t.last);
-    const tr=await(await fetch('https://www.bitstamp.net/api/v2/transactions/xrpusd/?time=hour',{signal:AbortSignal.timeout(7000)})).json();
-    return{price,buy:tr.filter(x=>x.type==='0').reduce((s,x)=>s+parseFloat(x.amount),0),sell:tr.filter(x=>x.type==='1').reduce((s,x)=>s+parseFloat(x.amount),0)};
+    const t=await(await fetch('https://api.bybit.com/v5/market/tickers?category=spot&symbol=XRPUSDT',{signal:AbortSignal.timeout(10000)})).json();
+    const price=parseFloat(t.result?.list?.[0]?.lastPrice);
+    if(!price||isNaN(price))return null;
+    const tr=await(await fetch('https://api.bybit.com/v5/market/recent-trade?category=spot&symbol=XRPUSDT&limit=500',{signal:AbortSignal.timeout(10000)})).json();
+    const trades=tr.result?.list||[];
+    return{price,
+      buy: trades.filter(x=>x.side==='Buy' ).reduce((s,x)=>s+parseFloat(x.size||0),0),
+      sell:trades.filter(x=>x.side==='Sell').reduce((s,x)=>s+parseFloat(x.size||0),0)};
   }catch{return null;}
 }
 async function bsOKX(){
   try{
-    const t=await(await fetch('https://www.okx.com/api/v5/market/ticker?instId=XRP-USDT',{signal:AbortSignal.timeout(7000)})).json();
-    const price=parseFloat(t.data[0].last);
-    const tr=await(await fetch('https://www.okx.com/api/v5/market/trades?instId=XRP-USDT&limit=500',{signal:AbortSignal.timeout(7000)})).json();
-    return{price,buy:tr.data.filter(x=>x.side==='buy').reduce((s,x)=>s+parseFloat(x.sz),0),sell:tr.data.filter(x=>x.side==='sell').reduce((s,x)=>s+parseFloat(x.sz),0)};
-  }catch{return null;}
-}
-async function bsGemini(){
-  // Use v2 candles for price (reliable) + v1 trades for buy/sell split
-  // Gemini trades: type is 'buy'/'sell' but can be null — guard against it
-  try{
-    const t=await(await fetch('https://api.gemini.com/v1/pubticker/xrpusd',{signal:AbortSignal.timeout(10000)})).json();
-    const price=parseFloat(t.last);
+    const t=await(await fetch('https://www.okx.com/api/v5/market/ticker?instId=XRP-USDT',{signal:AbortSignal.timeout(10000)})).json();
+    const price=parseFloat(t.data?.[0]?.last);
     if(!price||isNaN(price))return null;
-    const tr=await(await fetch('https://api.gemini.com/v1/trades/xrpusd?limit_trades=500&since=0',{signal:AbortSignal.timeout(10000)})).json();
-    if(!Array.isArray(tr))return{price,buy:0,sell:0};
+    const tr=await(await fetch('https://www.okx.com/api/v5/market/trades?instId=XRP-USDT&limit=500',{signal:AbortSignal.timeout(10000)})).json();
+    if(!tr.data)return{price,buy:0,sell:0};
     return{price,
-      buy: tr.filter(x=>x.type==='buy' ).reduce((s,x)=>s+parseFloat(x.amount||0),0),
-      sell:tr.filter(x=>x.type==='sell').reduce((s,x)=>s+parseFloat(x.amount||0),0)};
+      buy: tr.data.filter(x=>x.side==='buy' ).reduce((s,x)=>s+parseFloat(x.sz||0),0),
+      sell:tr.data.filter(x=>x.side==='sell').reduce((s,x)=>s+parseFloat(x.sz||0),0)};
   }catch{return null;}
 }
-const BS_FETCHERS={kraken:bsKraken,binanceus:bsBinanceUS,coinbase:bsCoinbase,upbit:bsUpbit,bitstamp:bsBitstamp,okx:bsOKX,gemini:bsGemini};
+async function bsKuCoin(){
+  // KuCoin has open CORS — confirmed working from all browser origins
+  try{
+    const t=await(await fetch('https://api.kucoin.com/api/v1/market/orderbook/level1?symbol=XRP-USDT',{signal:AbortSignal.timeout(10000)})).json();
+    const price=parseFloat(t.data?.price);
+    if(!price||isNaN(price))return null;
+    const tr=await(await fetch('https://api.kucoin.com/api/v1/market/histories?symbol=XRP-USDT',{signal:AbortSignal.timeout(10000)})).json();
+    const trades=tr.data||[];
+    return{price,
+      buy: trades.filter(x=>x.side==='buy' ).reduce((s,x)=>s+parseFloat(x.size||0),0),
+      sell:trades.filter(x=>x.side==='sell').reduce((s,x)=>s+parseFloat(x.size||0),0)};
+  }catch{return null;}
+}
+const BS_FETCHERS={kraken:bsKraken,binanceus:bsBinanceUS,coinbase:bsCoinbase,upbit:bsUpbit,bybit:bsBybit,okx:bsOKX,kucoin:bsKuCoin};
 
 // ── Pressure cell ─────────────────────────────────────────────────
 function pressureCell(buy,sell){
@@ -927,10 +950,11 @@ async function bsLoadAll(){
   setBsStatus('Fetching exchange data…','loading');
 
   const results={};
+  // Run fast USD exchanges in parallel, then slower KRW/Gemini in a second wave
+  // Run all exchanges in parallel — all have good CORS support
   await Promise.allSettled(
-    BS_EXCHANGES.map(async ex=>{
-      try{ results[ex.id]=await BS_FETCHERS[ex.id](); }
-      catch{ results[ex.id]=null; }
+    Object.keys(BS_FETCHERS).map(async id=>{
+      try{results[id]=await BS_FETCHERS[id]();}catch{results[id]=null;}
     })
   );
 
