@@ -362,7 +362,11 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   // lazy-load buy/sell on first visit
-  if (name === 'bs' && !bsLoaded) { bsLoaded = true; bsLoadAll(); }
+  if (name === 'bs' && !bsLoaded) {
+    bsLoaded = true;
+    // Small delay lets vol tracker populate G.data (used by bsUpbit cache)
+    setTimeout(bsLoadAll, G.data?.upbit ? 0 : 800);
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -768,8 +772,10 @@ function setBsStatus(msg, cls=''){
 
 // ── Fetchers ─────────────────────────────────────────────────────
 async function bsFetchFx(){
+  // Always prefer the already-fetched rate from the vol tracker tab
+  if(G.krwUsd && G.krwUsd > 0){ bsKrwUsd = G.krwUsd; return; }
   try{ bsKrwUsd = parseFloat((await(await fetch('https://api.exchangerate-api.com/v4/latest/KRW',{signal:AbortSignal.timeout(6000)})).json()).rates.USD); }
-  catch{ bsKrwUsd = G.krwUsd || 0.000713; } // reuse vol tab rate if available
+  catch{ bsKrwUsd = 0.000713; }
 }
 async function bsKraken(){
   try{
@@ -805,13 +811,32 @@ async function bsCoinbase(){
   }catch{return null;}
 }
 async function bsUpbit(){
-  // Upbit has open CORS — use cors mode explicitly
+  // Upbit blocks browser Origin headers via Cloudflare WAF on direct fetch.
+  // Strategy 1: reuse price already fetched by Vol Tracker tab (G.data.upbit.xrp)
+  // Strategy 2: fall back to fetching via a CORS-open proxy with no Origin spoofing
   try{
-    const t=await(await fetch('https://api.upbit.com/v1/ticker?markets=KRW-XRP',{mode:'cors',signal:AbortSignal.timeout(10000)})).json();
+    // Reuse vol tracker data if available (avoids the CORS block entirely)
+    const cached = G.data?.upbit?.xrp;
+    if(cached?.close){
+      const price = cached.close * bsKrwUsd;
+      // For buy/sell ticks, try direct fetch — works on some ISPs/browsers
+      try{
+        const tr=await(await fetch('https://api.upbit.com/v1/trades/ticks?market=KRW-XRP&count=100',{signal:AbortSignal.timeout(8000)})).json();
+        if(Array.isArray(tr)){
+          return{price,
+            buy: tr.filter(x=>x.ask_bid==='BID').reduce((s,x)=>s+parseFloat(x.trade_volume||0),0),
+            sell:tr.filter(x=>x.ask_bid==='ASK').reduce((s,x)=>s+parseFloat(x.trade_volume||0),0)};
+        }
+      }catch{}
+      // Return price-only if ticks blocked — still shows in price chart
+      return{price, buy:0, sell:0};
+    }
+    // No cached data — try direct fetch (works on non-Cloudflare-blocked IPs)
+    const t=await(await fetch('https://api.upbit.com/v1/ticker?markets=KRW-XRP',{signal:AbortSignal.timeout(10000)})).json();
     if(!Array.isArray(t)||!t[0])return null;
     const price=parseFloat(t[0].trade_price)*bsKrwUsd;
     if(!price||isNaN(price))return null;
-    const tr=await(await fetch('https://api.upbit.com/v1/trades/ticks?market=KRW-XRP&count=100',{mode:'cors',signal:AbortSignal.timeout(10000)})).json();
+    const tr=await(await fetch('https://api.upbit.com/v1/trades/ticks?market=KRW-XRP&count=100',{signal:AbortSignal.timeout(10000)})).json();
     if(!Array.isArray(tr))return{price,buy:0,sell:0};
     return{price,
       buy: tr.filter(x=>x.ask_bid==='BID').reduce((s,x)=>s+parseFloat(x.trade_volume||0),0),
