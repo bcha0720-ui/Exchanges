@@ -478,8 +478,23 @@ async function fetchUpbit(market,days=365){
   while(rem>0){
     const n=Math.min(200,rem);
     let url=`https://api.upbit.com/v1/candles/days?market=${market}&count=${n}`;
-    if(toDate)url+=`&to=${toDate}`;
-    try{const r=await fetch(url);if(!r.ok)break;const d=await r.json();if(!d.length)break;out.push(...d);toDate=d[d.length-1].candle_date_time_utc;rem-=n;await sleep(220);}catch{break;}
+    if(toDate)url+=`&to=${encodeURIComponent(toDate)}`;
+    try{
+      const r=await fetch(url,{signal:AbortSignal.timeout(12000)});
+      if(!r.ok)break;
+      const d=await r.json();
+      if(!d.length)break;
+      out.push(...d);
+      // Advance toDate: take the oldest candle's UTC time and subtract 1 second
+      // to avoid re-fetching the same candle on the next page
+      const oldest=d[d.length-1].candle_date_time_utc;
+      const dt=new Date(oldest);
+      dt.setSeconds(dt.getSeconds()-1);
+      toDate=dt.toISOString().replace('.000Z','');
+      rem-=d.length;
+      if(d.length<n)break; // fewer results than requested = no more pages
+      await sleep(250);
+    }catch{break;}
   }
   return out;
 }
@@ -536,7 +551,7 @@ async function fetchKraken(pair){
     const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
       const vol=s.reduce((a,x)=>a+parseFloat(x[6]),0);
       return{vol,valUsd:vol*close,start:new Date(s[s.length-1][0]*1000).toISOString().split('T')[0],end:new Date(s[0][0]*1000).toISOString().split('T')[0]};};
-    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(365)};
+    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(Math.min(365,c.length))};
   }catch{return null;}
 }
 async function fetchBinanceUS(symbol){
@@ -551,11 +566,25 @@ async function fetchBinanceUS(symbol){
   }catch{return null;}
 }
 async function fetchCoinbase(productId){
+  // Coinbase max 300 candles/request — fetch in two chunks to cover 365 days
   try{
-    const end=new Date(),start=new Date(end-365*86400*1000);
-    const r=await fetch(`https://api.exchange.coinbase.com/products/${productId}/candles?granularity=86400&start=${start.toISOString()}&end=${end.toISOString()}`,{signal:AbortSignal.timeout(12000)});
-    if(!r.ok)return null;let c=await r.json();c.sort((a,b)=>b[0]-a[0]);
+    const now=new Date();
+    const mid=new Date(now-180*86400*1000); // 180 days ago
+    const start=new Date(now-365*86400*1000); // 365 days ago
+    const fetchChunk=async(s,e)=>{
+      const r=await fetch(`https://api.exchange.coinbase.com/products/${productId}/candles?granularity=86400&start=${s.toISOString()}&end=${e.toISOString()}`,{signal:AbortSignal.timeout(12000)});
+      if(!r.ok)return[];
+      const d=await r.json();
+      return Array.isArray(d)?d:[];
+    };
+    const [chunk1,chunk2]=await Promise.all([fetchChunk(mid,now),fetchChunk(start,mid)]);
+    let c=[...chunk1,...chunk2];
+    // Deduplicate by timestamp
+    const seen=new Set();c=c.filter(x=>{if(seen.has(x[0]))return false;seen.add(x[0]);return true;});
+    c.sort((a,b)=>b[0]-a[0]);
+    if(!c.length)return null;
     const close=parseFloat(c[0]?.[4]??0);
+    if(!close)return null;
     const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
       const vol=s.reduce((a,x)=>a+parseFloat(x[5]),0);
       return{vol,valUsd:vol*close,start:new Date(s[s.length-1][0]*1000).toISOString().split('T')[0],end:new Date(s[0][0]*1000).toISOString().split('T')[0]};};
@@ -575,15 +604,31 @@ async function fetchBitstamp(pair){
   }catch{return null;}
 }
 async function fetchOKX(instId){
+  // OKX history-candles max 100/page — paginate with 'after' param to get 365 days
   try{
-    const r=await fetch(`https://www.okx.com/api/v5/market/history-candles?instId=${instId}&bar=1D&limit=300`,{signal:AbortSignal.timeout(10000)});
-    if(!r.ok)return null;const data=await r.json();
-    const c=data.data??[];const close=parseFloat(c[0]?.[4]??0);
-    const agg=n=>{const s=c.slice(0,Math.min(n,c.length));if(!s.length)return null;
+    let all=[];let after='';
+    for(let page=0;page<4;page++){
+      let url=`https://www.okx.com/api/v5/market/history-candles?instId=${instId}&bar=1D&limit=100`;
+      if(after)url+=`&after=${after}`;
+      const r=await fetch(url,{signal:AbortSignal.timeout(10000)});
+      if(!r.ok)break;
+      const data=await r.json();
+      const batch=data.data??[];
+      if(!batch.length)break;
+      all=all.concat(batch);
+      if(batch.length<100)break;
+      after=batch[batch.length-1][0]; // oldest timestamp → next page
+      await sleep(150);
+    }
+    if(!all.length)return null;
+    all.sort((a,b)=>+b[0]-+a[0]); // newest first
+    const close=parseFloat(all[0]?.[4]??0);
+    if(!close)return null;
+    const agg=n=>{const s=all.slice(0,Math.min(n,all.length));if(!s.length)return null;
       const vol=s.reduce((a,x)=>a+parseFloat(x[5]),0);
       const valUsd=s.reduce((a,x)=>a+parseFloat(x[7]||0),0)||vol*close;
       return{vol,valUsd,start:new Date(+s[s.length-1][0]).toISOString().split('T')[0],end:new Date(+s[0][0]).toISOString().split('T')[0]};};
-    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(c.length)};
+    return{close,isKrw:false,daily:agg(1),weekly:agg(7),monthly:agg(30),yearly:agg(365)};
   }catch{return null;}
 }
 async function fetchGemini(symbol){
