@@ -10,7 +10,7 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-MTLZMFLXGT');
+  gtag('config', 'G-JFYKZKVTMZ');
 </script>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -101,7 +101,7 @@ header{position:relative;z-index:2;padding:22px 28px;border-bottom:1px solid var
   font-family:var(--mono);font-size:12px;font-weight:700;color:var(--dim);
   transition:all .15s;user-select:none;white-space:nowrap;}
 .chip:hover{border-color:var(--accent);color:var(--text);}
-.chip.on{color:#000 !important;border-color:transparent !important;}
+.chip.on{color:#fff !important;border-color:transparent !important;}
 .chip .cdot2{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .chip .cst{font-size:10px;}
 .ctrl-btns{display:flex;gap:5px;margin-left:auto;}
@@ -427,7 +427,7 @@ function initChips(){
 function makeChip(id,label,color,type){
   const c=document.createElement('div');
   c.className='chip on';c.id=`chip-${type}-${id}`;
-  c.style.background=color+'22';c.style.borderColor=color+'88';
+  c.style.background=color+'33';c.style.borderColor=color+'99';
   c.innerHTML=`<div class="cdot2" style="background:${color}"></div>${label}`+(type==='ex'?`<span class="cst" id="cst-${id}"> ⏳</span>`:'');
   c.onclick=()=>toggleChip(type,id);return c;
 }
@@ -437,13 +437,13 @@ function toggleChip(type,id){
   const color=type==='ex'?EXCHANGES[id]?.color:COINS[id]?.color;
   if(!c)return;
   if(sel.has(id)){sel.delete(id);c.classList.remove('on');c.style.background='';c.style.borderColor='';}
-  else{sel.add(id);c.classList.add('on');c.style.background=color+'22';c.style.borderColor=color+'88';}
+  else{sel.add(id);c.classList.add('on');c.style.background=color+'33';c.style.borderColor=color+'99';}
   updateAllBtns();renderVolTable();buildVolCharts();
 }
 function selectAll(type){
   const keys=type==='ex'?Object.keys(EXCHANGES):Object.keys(COINS);
   const sel=type==='ex'?G.selEx:G.selCoin;
-  keys.forEach(id=>{sel.add(id);const c=document.getElementById(`chip-${type}-${id}`);const color=type==='ex'?EXCHANGES[id]?.color:COINS[id]?.color;if(c){c.classList.add('on');c.style.background=color+'22';c.style.borderColor=color+'88';}});
+  keys.forEach(id=>{sel.add(id);const c=document.getElementById(`chip-${type}-${id}`);const color=type==='ex'?EXCHANGES[id]?.color:COINS[id]?.color;if(c){c.classList.add('on');c.style.background=color+'33';c.style.borderColor=color+'99';}});
   updateAllBtns();renderVolTable();buildVolCharts();
 }
 function selectNone(type){
@@ -762,6 +762,7 @@ const BS_EXCHANGES = [
   {id:'binanceus', name:'Binance.US', tag:'bnu', color:'#f0b90b'},
   {id:'coinbase',  name:'Coinbase',   tag:'cbs', color:'#0082ff'},
   {id:'upbit',     name:'Upbit',      tag:'ub',  color:'#00d4ff'},
+  {id:'bithumb',   name:'Bithumb',    tag:'bt',  color:'#ff5050'},
   {id:'bybit',     name:'Bybit',      tag:'byt', color:'#f7a600'},
   {id:'okx',       name:'OKX',        tag:'okx', color:'#e2e8f0'},
   {id:'kucoin',    name:'KuCoin',     tag:'kuc', color:'#00c8a0'},
@@ -851,6 +852,22 @@ async function bsUpbit(){
       sell:tr.filter(x=>x.ask_bid==='ASK').reduce((s,x)=>s+parseFloat(x.trade_volume||0),0)};
   }catch{return null;}
 }
+async function bsBithumb(){
+  // Bithumb public API — returns KRW price, convert to USD
+  // Uses candlestick endpoint for price + transaction history for buy/sell
+  try{
+    const t=await(await fetch('https://api.bithumb.com/public/ticker/XRP_KRW',{signal:AbortSignal.timeout(10000)})).json();
+    if(t.status!=='0000')return null;
+    const priceKrw=parseFloat(t.data.closing_price);
+    const price=priceKrw*bsKrwUsd;
+    if(!price||isNaN(price))return null;
+    const tr=await(await fetch('https://api.bithumb.com/public/transaction_history/XRP_KRW?count=100',{signal:AbortSignal.timeout(10000)})).json();
+    if(tr.status!=='0000'||!Array.isArray(tr.data))return{price,buy:0,sell:0};
+    return{price,
+      buy: tr.data.filter(x=>x.type==='bid' ).reduce((s,x)=>s+parseFloat(x.units_traded||0),0),
+      sell:tr.data.filter(x=>x.type==='ask' ).reduce((s,x)=>s+parseFloat(x.units_traded||0),0)};
+  }catch{return null;}
+}
 async function bsBybit(){
   // Bybit has fully open CORS — confirmed working from all browser origins
   try{
@@ -889,7 +906,7 @@ async function bsKuCoin(){
       sell:trades.filter(x=>x.side==='sell').reduce((s,x)=>s+parseFloat(x.size||0),0)};
   }catch{return null;}
 }
-const BS_FETCHERS={kraken:bsKraken,binanceus:bsBinanceUS,coinbase:bsCoinbase,upbit:bsUpbit,bybit:bsBybit,okx:bsOKX,kucoin:bsKuCoin};
+const BS_FETCHERS={kraken:bsKraken,binanceus:bsBinanceUS,coinbase:bsCoinbase,upbit:bsUpbit,bithumb:bsBithumb,bybit:bsBybit,okx:bsOKX,kucoin:bsKuCoin};
 
 // ── Pressure cell ─────────────────────────────────────────────────
 function pressureCell(buy,sell){
